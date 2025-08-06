@@ -25,6 +25,8 @@ class XGateError extends Error
         $this->name = "XGateError";
 
         // Define o status, se existir no erro, senão usa o padrão
+        $this->status = $defaultStatus;
+
         $statusExternal = $error->getResponse()->getStatusCode();
         if ($statusExternal) {
             $this->status = $statusExternal;
