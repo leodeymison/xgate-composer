@@ -1,6 +1,7 @@
 {
-    "require": {
-        "guzzlehttp/guzzle": "^7.9",
-        "aws/aws-sdk-php": "^3.352"
-    }
+  "name": "xgate",
+  "require": {
+    "guzzlehttp/guzzle": "^7.9",
+    "aws/aws-sdk-php": "^3.352"
+  }
 }
