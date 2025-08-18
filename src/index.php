@@ -5,6 +5,7 @@ use GuzzleHttp\Exception\RequestException;
 
 require_once __DIR__ . '/types/account.php';
 require_once __DIR__ . '/types/token.php';
+require_once __DIR__ . './types/response.php';
 require_once __DIR__ . '/modules/Errors.php';
 
 class XGate
@@ -22,7 +23,7 @@ class XGate
         $this->login();
     }
 
-    private function login()
+    private function login(): Login
     {
         try {
             $response = $this->api->post('/auth/token', [
@@ -33,8 +34,10 @@ class XGate
                 time() + 60 * 60 * 24 * 2, // 48hrs
                 $data['token'],
             );
+
+            return $data;
         } catch (RequestException $e) {
-            throw new XGateError($e, "Erro ao acessar conta: ", 500);
+            throw new XGateError($e, "Erro ao acessar conta", 500);
         }
     }
 
@@ -52,10 +55,12 @@ class XGate
         }
     }
 
+    // ? CURRENCIES
     /**
      * Método usado para buscar todas as moedas fiduciárias disponível para depósitos na sua conta XGate
+     * @return Currency[]
      */
-    public function getCurrenciesDeposit()
+    public function getCurrenciesDeposit(): array
     {
         $this->verifyLogged();
         try {
@@ -64,14 +69,14 @@ class XGate
             ]);
             return json_decode($response->getBody(), true);
         } catch (RequestException $e) {
-            throw new XGateError($e, "Erro ao buscar moedas de depósito: ", 500);
+            throw new XGateError($e, "Erro ao buscar moedas de depósito disponíveis na sua conta", 500);
         }
     }
-
     /**
      * Método usado para buscar todas as moedas fiduciárias disponível para saques na sua conta XGate
+     * @return Currency[]
      */
-    public function getCurrenciesWithdraw()
+    public function getCurrenciesWithdraw(): array
     {
         $this->verifyLogged();
         try {
@@ -80,10 +85,11 @@ class XGate
             ]);
             return json_decode($response->getBody(), true);
         } catch (RequestException $e) {
-            throw new XGateError($e, "Erro ao buscar moedas de saque: ", 500);
+            throw new XGateError($e, "Erro ao buscar moedas de saque disponíveis na sua conta", 500);
         }
     }
 
+    // ? CRYPTOCURRENCIES
     /**
      * Método usado para buscar todas as cripto moedas disponível para depósitos na sua conta XGate
      */
@@ -96,10 +102,9 @@ class XGate
             ]);
             return json_decode($response->getBody(), true);
         } catch (RequestException $e) {
-            throw new XGateError($e, "Erro ao buscar criptomoedas de depósito: ", 500);
+            throw new XGateError($e, "Erro ao buscar cripto moedas de depósito disponíveis na sua conta", 500);
         }
     }
-
     /**
      * Método usado para buscar todas as cripto moedas disponível para saques na sua conta XGate
      */
@@ -112,10 +117,45 @@ class XGate
             ]);
             return json_decode($response->getBody(), true);
         } catch (RequestException $e) {
-            throw new XGateError($e, "Erro ao buscar criptomoedas de saque: ", 500);
+            throw new XGateError($e, "Erro ao buscar cripto moedas de saque disponíveis na sua conta", 500);
         }
     }
 
+    // ? BLOCKCHAIN NETWORK
+    /**
+     * Método usado para buscar todas as redes blockchains disponível para depósitos na sua conta XGate e as moedas suportadas por cada rede blockchain
+     */
+    public function getBlockchainDeposit(){
+        $this->verifyLogged();
+        try {
+            $response = $this->api->get('/deposit/company/blockchain-networks', [
+                'headers' => $this->getHeader(),
+            ]);
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            throw new XGateError($e, "Erro ao buscar redes blockchainscde de depósito disponíveis para depósito na sua conta", 500);
+        }
+    }
+    /**
+     * Método usado para buscar todas as redes blockchains disponível para saque na sua conta XGate e as moedas suportadas por cada rede blockchain
+     */
+    public function getBlockchainWithdraw(){
+        $this->verifyLogged();
+        try {
+            $response = $this->api->get('/deposit/company/blockchain-networks', [
+                'headers' => $this->getHeader(),
+            ]);
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            throw new XGateError($e, "Erro ao buscar redes blockchainscde de saque disponíveis para depósito na sua conta", 500);
+        }
+    }
+
+    // ? COMPANY
+    /**
+     * Método usado para buscar o saldo na sua conta XGate
+     * @param {object} filter - Filtra por uma moeda ou cryptomoeda que você deseja saber o saldo, caso esse parâmetro seja ignorado, vai ser retornado todas as cryptomoedas e moedas disponível na sua conta, juntamente com o saldo de cada uma delas.
+     */
     public function getBalance($filter = null)
     {
         $this->verifyLogged();
@@ -134,10 +174,241 @@ class XGate
             ]);
             return json_decode($response->getBody(), true);
         } catch (RequestException $e) {
-            throw new XGateError($e, "Erro ao buscar saldo em conta: ", 500);
+            throw new XGateError($e, "Erro ao buscar saldo em conta", 500);
         }
     }
 
+    // ? SUB COMPANY
+    /**
+     * Criar uma sub conta
+     * @param {object} dataParam - Object com as informações da sub conta. { user: {...}, deposit: {...}, withdraw: {...} }
+     */
+    public function createSubCompany($dataParam){
+        $this->verifyLogged();
+        $keys = [
+            "currencies",
+            "cryptocurrencies",
+            "blockchainNetworks",
+        ];
+        try {
+            $body = [
+                'user' => $dataParam['user'], // equivalente ao dataParam.user
+                'deposit' => [
+                    'blockchainNetworks' => [],
+                    'cryptocurrencies' => [],
+                    'currencies' => [],
+                ],
+                'withdraw' => [
+                    'blockchainNetworks' => [],
+                    'cryptocurrencies' => [],
+                    'currencies' => [],
+                ],
+            ];
+            $typeTransactions = [
+                "deposit",
+                "withdraw",
+            ];
+            foreach ($typeTransactions as $typeTransaction) {
+                $currencies = $dataParam[$typeTransaction]['currencies'] ?? null;
+
+                if (is_array($currencies)) {
+                    foreach ($currencies as $coin) {
+                        if (is_string($coin['currency'] ?? null)) {
+                            $func = $typeTransaction === 'deposit'
+                                ? $this->getCurrenciesDeposit()
+                                : $this->getCurrenciesWithdraw();
+
+                            $getCoin = array_filter($func, function ($item) use ($coin) {
+                                return $item['_id'] === $coin['currency'];
+                            });
+
+                            if (empty($getCoin)) {
+                                throw new Exception("Moeda {$coin['currency']} não disponível para a sua conta");
+                            }
+
+                            $body[$typeTransaction]['currencies'][] = [
+                                'currency' => array_values($getCoin)[0],
+                                'fee' => $coin['fee'] ?? null
+                            ];
+                        } else {
+                            $body[$typeTransaction]['currencies'][] = [
+                                'currency' => $coin['currency'],
+                                'fee' => $coin['fee'] ?? null
+                            ];
+                        }
+                    }
+                } else {
+                    $getCoin = $typeTransaction === 'deposit'
+                        ? $this->getCurrenciesDeposit()
+                        : $this->getCurrenciesWithdraw();
+
+                    foreach ($getCoin as $coin) {
+                        $body[$typeTransaction]['currencies'][] = [
+                            'currency' => $coin,
+                            'fee' => $currencies ?? null
+                        ];
+                    }
+                }
+            }
+
+            // CRYPTOCURRENCIES
+            foreach ($typeTransactions as $typeTransaction) {
+                $cryptos = $dataParam[$typeTransaction]['cryptocurrencies'] ?? null;
+
+                if (is_array($cryptos)) {
+                    foreach ($cryptos as $coin) {
+                        if (is_string($coin['cryptocurrency'] ?? null)) {
+                            $func = $typeTransaction === 'deposit'
+                                ? $this->getCryptocurrenciesDeposit()
+                                : $this->getCryptocurrenciesWithdraw();
+
+                            $getCoin = array_filter($func, function ($item) use ($coin) {
+                                return $item['_id'] === $coin['cryptocurrency'];
+                            });
+
+                            if (empty($getCoin)) {
+                                throw new Exception("Cripto moeda {$coin['cryptocurrency']} não disponível para a sua conta");
+                            }
+
+                            $body[$typeTransaction]['cryptocurrencies'][] = [
+                                'cryptocurrency' => array_values($getCoin)[0],
+                                'fee' => $coin['fee'] ?? null
+                            ];
+                        } else {
+                            $body[$typeTransaction]['cryptocurrencies'][] = [
+                                'cryptocurrency' => $coin['cryptocurrency'],
+                                'fee' => $coin['fee'] ?? null
+                            ];
+                        }
+                    }
+                } else {
+                    $getCoin = $typeTransaction === 'deposit'
+                        ? $this->getCryptocurrenciesDeposit()
+                        : $this->getCryptocurrenciesWithdraw();
+
+                    foreach ($getCoin as $coin) {
+                        $body[$typeTransaction]['cryptocurrencies'][] = [
+                            'cryptocurrency' => $coin,
+                            'fee' => $cryptos ?? null
+                        ];
+                    }
+                }
+            }
+
+            // BLOCKCHAIN NETWORKS
+            foreach ($typeTransactions as $typeTransaction) {
+                $networks = $dataParam[$typeTransaction]['blockchainNetworks'] ?? null;
+
+                if (is_array($networks)) {
+                    foreach ($networks as $coin) {
+                        if (is_string($coin['blockchainNetwork'] ?? null)) {
+                            $func = $typeTransaction === 'deposit'
+                                ? $this->getBlockchainDeposit()
+                                : $this->getBlockchainWithdraw();
+
+                            $funcWithoutCrypto = array_map(function ($item) {
+                                return [
+                                    '_id' => $item['_id'],
+                                    'name' => $item['name'],
+                                    'chainId' => $item['chainId'],
+                                    'updatedDate' => $item['updatedDate'],
+                                    'createdDate' => $item['createdDate'],
+                                ];
+                            }, $func);
+
+                            $getCoin = array_filter($funcWithoutCrypto, function ($item) use ($coin) {
+                                return $item['_id'] === $coin['blockchainNetwork'];
+                            });
+
+                            if (empty($getCoin)) {
+                                throw new Exception("Blockchain {$coin['blockchainNetwork']} não disponível para a sua conta");
+                            }
+
+                            $body[$typeTransaction]['blockchainNetworks'][] = [
+                                'blockchainNetwork' => array_values($getCoin)[0],
+                                'fee' => $coin['fee'] ?? null
+                            ];
+                        } else {
+                            $body[$typeTransaction]['blockchainNetworks'][] = [
+                                'blockchainNetwork' => $coin['blockchainNetwork'],
+                                'fee' => $coin['fee'] ?? null
+                            ];
+                        }
+                    }
+                } else {
+                    $getCoin = $typeTransaction === 'deposit'
+                        ? $this->getBlockchainDeposit()
+                        : $this->getBlockchainWithdraw();
+
+                    $funcWithoutCrypto = array_map(function ($item) {
+                        return [
+                            '_id' => $item['_id'],
+                            'name' => $item['name'],
+                            'chainId' => $item['chainId'],
+                            'updatedDate' => $item['updatedDate'],
+                            'createdDate' => $item['createdDate'],
+                        ];
+                    }, $getCoin);
+
+                    foreach ($funcWithoutCrypto as $coin) {
+                        $body[$typeTransaction]['blockchainNetworks'][] = [
+                            'blockchainNetwork' => $coin,
+                            'fee' => $networks ?? null
+                        ];
+                    }
+                }
+            }
+
+            $response = $this->api->post('/company/subaccount', [
+                'json' => $body,
+                'headers' => $this->getHeader(),
+            ]);
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            throw new XGateError($e, "Erro ao criar sub conta", 500);
+        }
+    }
+    /**
+     * Adiciona o primeiro IP de uma sub conta
+     * @param {string} ip - Endereço IPV4 ou IPV6
+     */
+    public function addFirstIP(string $ip){
+        $this->verifyLogged();
+        try {
+            $response = $this->api->post('/withdraw/allowed-ip/subaccount', [
+                'json' => [
+                    "ip" => $ip
+                ],
+                'headers' => $this->getHeader(),
+            ]);
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            throw new XGateError($e, "Erro ao adicionar o primeira IP na sub conta", 500);
+        }
+    }
+    /**
+     * Adiciona o primeiro webhook de uma sub conta
+     * @param {object} body - Um object{} com dois parâmetros: "externalWebhookUrl" = URL externa do WebHook e "name" = Para identificar o Webhook pelo nome
+     */
+    public function addFirstWebhook($body){
+        $this->verifyLogged();
+        try {
+            $response = $this->api->post('/webhook/subaccount', [
+                'json' => $body,
+                'headers' => $this->getHeader(),
+            ]);
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            throw new XGateError($e, "Erro ao adicionar o primeira Webhook na sub conta", 500);
+        }
+    }
+
+    // ? CUSTOMER
+    /**
+     *
+     * Método usado para criar um cliente.
+     * @param {object} customer - Objeto com os dados do cliente. { name: "", ... }
+     */
     public function customerCreate($customer)
     {
         $this->verifyLogged();
@@ -151,7 +422,12 @@ class XGate
             throw new XGateError($e, "Erro ao criar cliente: ", 500);
         }
     }
-
+    /**
+     *
+     * Método usado para atualizar informações do cliente
+     * @param {string} customerId - ID do cliente que você deseja mudar as informações
+     * @param {object} customer - Objeto com as novas informações do cliente. { name: "", ... }
+     */
     public function customerUpdate($customerId, $customer)
     {
         $this->verifyLogged();
@@ -166,7 +442,15 @@ class XGate
         }
     }
 
-    public function getQuotationDepositFiatToCrypto($amount, $currencyType, $cryptoName)
+    // ? QUOTATION
+    /**
+     *
+     * Método usado para buscar uma contação de depósito convertendo moeda fiduciária para cripto moeda.
+     * @param {number} amount - Valor de deseja depositar
+     * @param {string} methodCurrency - Moeda fiduciária
+     * @param {string} methodCryptocurrency - Cripto moeda usada para conversão
+     */
+    public function getQuotationDepositFiatToCrypto(Float $amount, $currencyType, $cryptoName)
     {
         $this->verifyLogged();
 
@@ -195,8 +479,96 @@ class XGate
             throw new XGateError($e, "Erro ao obter cotação: ", 500);
         }
     }
+    /**
+     *
+     * Método usado para buscar uma contação de saque convertendo cripto moeda para moeda fiduciária.
+     * @param {number} amount - Valor de deseja sacar
+     * @param {string} methodCryptocurrency - Cripto moeda
+     * @param {string} methodCurrency - Moeda fiduciária usada para conversão
+     */
+    public function getQuotationWithdrawCryptoToFiat(Float $amount, $methodCryptocurrency, $methodCurrency){
+        $this->verifyLogged();
 
-    public function depositFiat($amount, $customerId, $methodCurrency)
+        $currencies = $this->getCurrenciesWithdraw();
+        $currency = array_filter($currencies, fn($c) => $c['type'] === $methodCurrency);
+        $currency = array_values($currency)[0] ?? null;
+
+        $cryptocurrencies = $this->getCryptocurrenciesWithdraw();
+        $cryptocurrency = array_filter($cryptocurrencies, fn($c) => $c['name'] === $methodCryptocurrency);
+        $cryptocurrency = array_values($cryptocurrency)[0] ?? null;
+
+        if (!$cryptocurrency) {
+            throw new XGateError(new Error(), sprintf("Crypto moeda %s não está habilitada na sua conta", $cryptocurrency), 400);
+        }
+        if (!$currency) {
+            throw new XGateError(new Error(), sprintf("Moeda %s não está habilitada na sua conta", $methodCurrency), 400);
+        }
+
+        try {
+            $response = $this->api->post(sprintf("/deposit/conversion/%s/%s", mb_strtolower($currency[0]->name), mb_strtolower($currency[0]->type)), [
+                'json' => [
+                    'amount' => $amount,
+                    'cryptocurrency' => $cryptocurrency[0],
+                ],
+                'headers' => $this->getHeader(),
+            ]);
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            throw new XGateError($e, "Erro ao buscar redes blockchainscde de depósito disponíveis para depósito na sua conta", 500);
+        }
+    }
+    /**
+     *
+     * Método usado para buscar uma contação de saque de crypto moeda para uma carteira externa
+     * @param {number} amount - Valor de deseja sacar
+     * @param {string} methodBlockchain - Rede Blockchain
+     * @param {string} methodCryptocurrency - Cripto moeda
+     */
+    public function getQuotationWithdrawExternalWallet(Float $amount, $methodBlockchain, $methodCryptocurrency){
+        $this->verifyLogged();
+
+        $blockchains = $this->getBlockchainWithdraw();
+        $blockchain = array_filter($blockchains, fn($c) => $c['type'] === $methodBlockchain);
+        $blockchain = array_values($blockchain)[0] ?? null;
+
+        if (!$blockchain) {
+            throw new XGateError(new Error(), sprintf("Rede Blockchan %s não está habilitada na sua conta", $methodBlockchain), 400);
+        }
+
+        $cryptocurrency = array_filter($blockchain[0]->cryptocurrencies, fn($c) => $c->cryptocurrency['name'] === $methodCryptocurrency);
+        $cryptocurrency = array_values($cryptocurrency)[0] ?? null;
+
+        if (!$cryptocurrency) {
+            throw new XGateError(new Error(), sprintf("Crypto moeda %s não está habilitada na sua conta", $methodCryptocurrency), 400);
+        }
+
+        if (!$cryptocurrency[0]->minWithdraw > $amount) {
+            throw new XGateError(new Error(), sprintf("Saque mínimo de %s na Rede %s é de %s %s", $methodCryptocurrency, $methodBlockchain, $cryptocurrency[0]->minWithdraw, $methodCryptocurrency), 400);
+        }
+
+        try {
+            $response = $this->api->post(sprintf("/withdraw/transaction/crypto/amount"), [
+                'json' => [
+                    'amount' => $amount,
+                    'cryptocurrency' => $cryptocurrency[0]->cryptocurrency,
+                    'blockchainNetwork' => $blockchain[0],
+                ],
+                'headers' => $this->getHeader(),
+            ]);
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            throw new XGateError($e, "Erro ao buscar redes blockchainscde de depósito disponíveis para depósito na sua conta", 500);
+        }
+    }
+
+    // ? DEPOSIT
+    /**
+     * Método usado para solicitar um depósito
+     * @param {number} amount - Valor de deseja depositar
+     * @param {string|object} customer - Dados do cliente ou ID do cliente já criado anteriormente
+     * @param {string} methodCurrency - Método de depósito, ex: PIX
+     */
+    public function depositFiat(Float $amount, $customerId, $methodCurrency)
     {
         $this->verifyLogged();
 
@@ -222,36 +594,14 @@ class XGate
             throw new XGateError($e, "Erro ao solicitar depósito: ", 500);
         }
     }
-
-    public function withdrawFiat($amount, $customerId, $methodCurrency, $pixKey)
-    {
-        $this->verifyLogged();
-
-        $currencies = $this->getCurrenciesWithdraw();
-        $currency = array_filter($currencies, fn($c) => $c['type'] === $methodCurrency);
-        $currency = array_values($currency)[0] ?? null;
-
-        if (!$currency) {
-            throw new XGateError(new Error(), "Moeda $methodCurrency não habilitada na conta", 400);
-        }
-
-        try {
-            $response = $this->api->post('/withdraw', [
-                'json' => [
-                    'amount' => $amount,
-                    'customerId' => $customerId,
-                    'currency' => $currency,
-                    'pixKey' => $pixKey
-                ],
-                'headers' => $this->getHeader(),
-            ]);
-            return json_decode($response->getBody(), true);
-        } catch (RequestException $e) {
-            throw new XGateError($e, "Erro ao solicitar saque: ", 500);
-        }
-    }
-
-    public function depositConversionFiatToCrypto($amount, $customerId, $methodCurrency, $methodCryptocurrency)
+    /**
+     * Método usado para solicitar um depósito de moeda fiduciária com conversão para crypto moeda
+     * @param {number} amount - Valor de deseja depositar
+     * @param {string|object} customer - Dados do cliente ou ID do cliente já criado anteriormente
+     * @param {string} methodCurrency - Método de depósito, ex: PIX
+     * @param {string} methodCryptocurrency - Método de conversão, ex: USDT
+     */
+    public function depositConversionFiatToCrypto(Float $amount, $customerId, $methodCurrency, $methodCryptocurrency)
     {
         $this->verifyLogged();
 
@@ -280,8 +630,68 @@ class XGate
             throw new XGateError($e, "Erro ao solicitar depósito com conversão: ", 500);
         }
     }
+    /**
+     * Método usado para gerar uma carteira de cripto moeda para o cliente depositar
+     * @param {string|object} customer - Dados do cliente ou ID do cliente já criado anteriormente
+     */
+    public function depositGenerateCryptoWallet($customerId)
+    {
+        $this->verifyLogged();
 
-    public function withdrawConversionCryptoToFiat($amount, $customerId, $methodCryptocurrency, $methodCurrency, $pixKey)
+        try {
+            $response = $this->api->get("/crypto/customer/{$customerId}/wallet", [
+                'headers' => $this->getHeader(),
+            ]);
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            throw new XGateError($e, "Erro ao gerar carteira cripto: ", 500);
+        }
+    }
+
+    // ? WITHDRAW
+    /**
+     * Método usado para solicitar um saque
+     * @param {number} amount - Valor de deseja sacar
+     * @param {string|object} customer - Dados do cliente ou ID do cliente já criado anteriormente
+     * @param {string} methodCurrency - Método de saque, ex: PIX
+     * @param {object} pixKey - Chave Pix - { key: "...", type: "PHONE" | "CPF" | "CNPJ" | "EMAIL" | "RANDOM" }
+     */
+    public function withdrawFiat(Float $amount, $customerId, $methodCurrency, $pixKey)
+    {
+        $this->verifyLogged();
+
+        $currencies = $this->getCurrenciesWithdraw();
+        $currency = array_filter($currencies, fn($c) => $c['type'] === $methodCurrency);
+        $currency = array_values($currency)[0] ?? null;
+
+        if (!$currency) {
+            throw new XGateError(new Error(), "Moeda $methodCurrency não habilitada na conta", 400);
+        }
+
+        try {
+            $response = $this->api->post('/withdraw', [
+                'json' => [
+                    'amount' => $amount,
+                    'customerId' => $customerId,
+                    'currency' => $currency,
+                    'pixKey' => $pixKey
+                ],
+                'headers' => $this->getHeader(),
+            ]);
+            return json_decode($response->getBody(), true);
+        } catch (RequestException $e) {
+            throw new XGateError($e, "Erro ao solicitar saque: ", 500);
+        }
+    }
+    /**
+     * Método usado para solicitar um saque convertendo cripto moeda para moeda fiduciária.
+     * @param {number} amount - Valor de deseja sacar
+     * @param {string|object} customer - Dados do cliente ou ID do cliente já criado anteriormente
+     * @param {string} methodCryptocurrency - Cripto moeda para conversão, ex: USDT
+     * @param {string} methodCurrency - Moeda base, ex: PIX
+     * @param {object} pixKey - Chave Pix - { key: "...", type: "PHONE" | "CPF" | "CNPJ" | "EMAIL" | "RANDOM" }
+     */
+    public function withdrawConversionCryptoToFiat(Float $amount, $customerId, $methodCryptocurrency, $methodCurrency, $pixKey)
     {
         $this->verifyLogged();
 
@@ -311,8 +721,15 @@ class XGate
             throw new XGateError($e, "Erro ao solicitar saque com conversão: ", 500);
         }
     }
-
-    public function withdrawExternalWallet($amount, $customerId, $blockchainName, $cryptoName, $walletKey)
+    /**
+     * Método usado para solicitar um saque convertendo cripto moeda para moeda fiduciária.
+     * @param {number} amount - Valor de deseja sacar
+     * @param {string|object} customer - Dados do cliente ou ID do cliente já criado anteriormente
+     * @param {string} methodBlockchain - Rede blockchain, ex: USDT
+     * @param {string} methodCryptocurrency - Cripto moeda, ex: PIX
+     * @param {object} walletkey - Chave pública, ex: 0x12***********
+     */
+    public function withdrawExternalWallet(Float $amount, $customerId, $blockchainName, $cryptoName, $walletKey)
     {
         $this->verifyLogged();
 
@@ -348,6 +765,12 @@ class XGate
         }
     }
 
+    // ? PIX
+    /**
+     * Método usado para criar uma chave pix para o cliente
+     * @param {string|object} customer - Dados do cliente ou ID do cliente já criado anteriormente
+     * @param {object} body - Chave Pix - { key: "...", type: "PHONE" | "CPF" | "CNPJ" | "EMAIL" | "RANDOM" }
+     */
     public function pixKeyCreate($customerId, $body)
     {
         $this->verifyLogged();
@@ -362,7 +785,10 @@ class XGate
             throw new XGateError($e, "Erro ao criar chave PIX: ", 500);
         }
     }
-
+    /**
+     * Método usado para buscar todas as chaves pix do cliente
+     * @param {string|object} customer - Dados do cliente ou ID do cliente já criado anteriormente
+     */
     public function pixKeyGetAll($customerId)
     {
         $this->verifyLogged();
@@ -376,7 +802,11 @@ class XGate
             throw new XGateError($e, "Erro ao buscar chaves PIX: ", 500);
         }
     }
-
+    /**
+     * Método usado para deletar uma chave pix do cliente
+     * @param {string} customerId - ID do cliente já criado anteriormente
+     * @param {string} pixKeyId - ID da chave pix do cliente
+     */
     public function pixKeyDelete($customerId, $pixKeyId)
     {
         $this->verifyLogged();
@@ -388,20 +818,6 @@ class XGate
             return json_decode($response->getBody(), true);
         } catch (RequestException $e) {
             throw new XGateError($e, "Erro ao deletar chave PIX: ", 500);
-        }
-    }
-
-    public function depositGenerateCryptoWallet($customerId)
-    {
-        $this->verifyLogged();
-
-        try {
-            $response = $this->api->get("/crypto/customer/{$customerId}/wallet", [
-                'headers' => $this->getHeader(),
-            ]);
-            return json_decode($response->getBody(), true);
-        } catch (RequestException $e) {
-            throw new XGateError($e, "Erro ao gerar carteira cripto: ", 500);
         }
     }
 }
