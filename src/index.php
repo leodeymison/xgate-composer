@@ -92,8 +92,9 @@ class XGate
     // ? CRYPTOCURRENCIES
     /**
      * Método usado para buscar todas as cripto moedas disponível para depósitos na sua conta XGate
+     * @return Cryptocurrency[]
      */
-    public function getCryptocurrenciesDeposit()
+    public function getCryptocurrenciesDeposit(): array
     {
         $this->verifyLogged();
         try {
@@ -107,8 +108,9 @@ class XGate
     }
     /**
      * Método usado para buscar todas as cripto moedas disponível para saques na sua conta XGate
+     * @return Cryptocurrency[]
      */
-    public function getCryptocurrenciesWithdraw()
+    public function getCryptocurrenciesWithdraw(): array
     {
         $this->verifyLogged();
         try {
@@ -124,8 +126,9 @@ class XGate
     // ? BLOCKCHAIN NETWORK
     /**
      * Método usado para buscar todas as redes blockchains disponível para depósitos na sua conta XGate e as moedas suportadas por cada rede blockchain
+     * @return BlockchainDeposit[]
      */
-    public function getBlockchainDeposit(){
+    public function getBlockchainDeposit(): array {
         $this->verifyLogged();
         try {
             $response = $this->api->get('/deposit/company/blockchain-networks', [
@@ -138,8 +141,9 @@ class XGate
     }
     /**
      * Método usado para buscar todas as redes blockchains disponível para saque na sua conta XGate e as moedas suportadas por cada rede blockchain
+     * @return BlockchainWithdraw[]
      */
-    public function getBlockchainWithdraw(){
+    public function getBlockchainWithdraw(): array {
         $this->verifyLogged();
         try {
             $response = $this->api->get('/deposit/company/blockchain-networks', [
@@ -155,8 +159,9 @@ class XGate
     /**
      * Método usado para buscar o saldo na sua conta XGate
      * @param {object} filter - Filtra por uma moeda ou cryptomoeda que você deseja saber o saldo, caso esse parâmetro seja ignorado, vai ser retornado todas as cryptomoedas e moedas disponível na sua conta, juntamente com o saldo de cada uma delas.
+     * @return (BalanceCurrency|BalanceCryptocurrency)[]
      */
-    public function getBalance($filter = null)
+    public function getBalance(CurrencyBalance|CryptoBalance|null $filter = null): array
     {
         $this->verifyLogged();
         try {
@@ -182,8 +187,9 @@ class XGate
     /**
      * Criar uma sub conta
      * @param {object} dataParam - Object com as informações da sub conta. { user: {...}, deposit: {...}, withdraw: {...} }
+     * @return SubCompanyCreate
      */
-    public function createSubCompany($dataParam){
+    public function createSubCompany(SubCompanyCreate $dataParam): SubCompanyCreate {
         $this->verifyLogged();
         $keys = [
             "currencies",
@@ -371,8 +377,9 @@ class XGate
     /**
      * Adiciona o primeiro IP de uma sub conta
      * @param {string} ip - Endereço IPV4 ou IPV6
+     * @return SubCompanyCreate
      */
-    public function addFirstIP(string $ip){
+    public function addFirstIP(string $ip): Message {
         $this->verifyLogged();
         try {
             $response = $this->api->post('/withdraw/allowed-ip/subaccount', [
@@ -389,8 +396,9 @@ class XGate
     /**
      * Adiciona o primeiro webhook de uma sub conta
      * @param {object} body - Um object{} com dois parâmetros: "externalWebhookUrl" = URL externa do WebHook e "name" = Para identificar o Webhook pelo nome
+     * @return SubCompanyCreate
      */
-    public function addFirstWebhook($body){
+    public function addFirstWebhook(Webhook $body): Message {
         $this->verifyLogged();
         try {
             $response = $this->api->post('/webhook/subaccount', [
@@ -407,9 +415,10 @@ class XGate
     /**
      *
      * Método usado para criar um cliente.
-     * @param {object} customer - Objeto com os dados do cliente. { name: "", ... }
+     * @param Customer $customer - Objeto com os dados do cliente. { name: "", ... }
+     * @return CreateCustomer
      */
-    public function customerCreate($customer)
+    public function customerCreate(Customer $customer): CreateCustomer
     {
         $this->verifyLogged();
         try {
@@ -425,10 +434,11 @@ class XGate
     /**
      *
      * Método usado para atualizar informações do cliente
-     * @param {string} customerId - ID do cliente que você deseja mudar as informações
-     * @param {object} customer - Objeto com as novas informações do cliente. { name: "", ... }
+     * @param string $customerId - ID do cliente que você deseja mudar as informações
+     * @param Customer $customer - Objeto com as novas informações do cliente. { name: "", ... }
+     * @return Message
      */
-    public function customerUpdate($customerId, $customer)
+    public function customerUpdate(string $customerId, Customer $customer): Message
     {
         $this->verifyLogged();
         try {
@@ -446,11 +456,12 @@ class XGate
     /**
      *
      * Método usado para buscar uma contação de depósito convertendo moeda fiduciária para cripto moeda.
-     * @param {number} amount - Valor de deseja depositar
-     * @param {string} methodCurrency - Moeda fiduciária
-     * @param {string} methodCryptocurrency - Cripto moeda usada para conversão
+     * @param float $amount - Valor de deseja depositar
+     * @param MethodCurrency $methodCurrency - Moeda fiduciária
+     * @param MethodCryptocurrency $methodCryptocurrency - Cripto moeda usada para conversão
+     * @return QuotationCrypto
      */
-    public function getQuotationDepositFiatToCrypto(Float $amount, $currencyType, $cryptoName)
+    public function getQuotationDepositFiatToCrypto(float $amount, MethodCurrency $currencyType, MethodCryptocurrency $cryptoName): QuotationCrypto
     {
         $this->verifyLogged();
 
@@ -482,11 +493,12 @@ class XGate
     /**
      *
      * Método usado para buscar uma contação de saque convertendo cripto moeda para moeda fiduciária.
-     * @param {number} amount - Valor de deseja sacar
-     * @param {string} methodCryptocurrency - Cripto moeda
-     * @param {string} methodCurrency - Moeda fiduciária usada para conversão
+     * @param float $amount - Valor de deseja sacar
+     * @param MethodCryptocurrency $methodCryptocurrency - Cripto moeda
+     * @param MethodCurrency $methodCurrency - Moeda fiduciária usada para conversão
+     * @return QuotationFiat
      */
-    public function getQuotationWithdrawCryptoToFiat(Float $amount, $methodCryptocurrency, $methodCurrency){
+    public function getQuotationWithdrawCryptoToFiat(float $amount, MethodCryptocurrency $methodCryptocurrency, MethodCurrency $methodCurrency): QuotationFiat {
         $this->verifyLogged();
 
         $currencies = $this->getCurrenciesWithdraw();
@@ -520,11 +532,12 @@ class XGate
     /**
      *
      * Método usado para buscar uma contação de saque de crypto moeda para uma carteira externa
-     * @param {number} amount - Valor de deseja sacar
-     * @param {string} methodBlockchain - Rede Blockchain
-     * @param {string} methodCryptocurrency - Cripto moeda
+     * @param float $amount - Valor de deseja sacar
+     * @param MethodBlockchain $methodBlockchain - Rede Blockchain
+     * @param MethodCryptocurrency $methodCryptocurrency - Cripto moeda
+     * @return QuotationAmount
      */
-    public function getQuotationWithdrawExternalWallet(Float $amount, $methodBlockchain, $methodCryptocurrency){
+    public function getQuotationWithdrawExternalWallet(float $amount, MethodBlockchain $methodBlockchain, MethodCryptocurrency $methodCryptocurrency): QuotationAmount {
         $this->verifyLogged();
 
         $blockchains = $this->getBlockchainWithdraw();
@@ -564,11 +577,12 @@ class XGate
     // ? DEPOSIT
     /**
      * Método usado para solicitar um depósito
-     * @param {number} amount - Valor de deseja depositar
-     * @param {string|object} customer - Dados do cliente ou ID do cliente já criado anteriormente
-     * @param {string} methodCurrency - Método de depósito, ex: PIX
+     * @param float $amount - Valor de deseja depositar
+     * @param string|Customer $customer - Dados do cliente ou ID do cliente já criado anteriormente
+     * @param MethodCurrency $methodCurrency - Método de depósito, ex: PIX
+     * @return Deposit
      */
-    public function depositFiat(Float $amount, $customerId, $methodCurrency)
+    public function depositFiat(float $amount, string|Customer $customerId, MethodCurrency $methodCurrency): Deposit
     {
         $this->verifyLogged();
 
@@ -596,12 +610,13 @@ class XGate
     }
     /**
      * Método usado para solicitar um depósito de moeda fiduciária com conversão para crypto moeda
-     * @param {number} amount - Valor de deseja depositar
-     * @param {string|object} customer - Dados do cliente ou ID do cliente já criado anteriormente
-     * @param {string} methodCurrency - Método de depósito, ex: PIX
-     * @param {string} methodCryptocurrency - Método de conversão, ex: USDT
+     * @param float $amount - Valor de deseja depositar
+     * @param string|Customer $customer - Dados do cliente ou ID do cliente já criado anteriormente
+     * @param MethodCurrency $methodCurrency - Método de depósito, ex: PIX
+     * @param MethodCryptocurrency $methodCryptocurrency - Método de conversão, ex: USDT
+     * @return Deposit
      */
-    public function depositConversionFiatToCrypto(Float $amount, $customerId, $methodCurrency, $methodCryptocurrency)
+    public function depositConversionFiatToCrypto(float $amount, string|Customer $customerId, MethodCurrency $methodCurrency, MethodCryptocurrency $methodCryptocurrency): Deposit
     {
         $this->verifyLogged();
 
@@ -632,9 +647,10 @@ class XGate
     }
     /**
      * Método usado para gerar uma carteira de cripto moeda para o cliente depositar
-     * @param {string|object} customer - Dados do cliente ou ID do cliente já criado anteriormente
+     * @param string|Customer $customer - Dados do cliente ou ID do cliente já criado anteriormente
+     * @return Wallet[]
      */
-    public function depositGenerateCryptoWallet($customerId)
+    public function depositGenerateCryptoWallet(string|Customer $customerId): array
     {
         $this->verifyLogged();
 
@@ -651,12 +667,13 @@ class XGate
     // ? WITHDRAW
     /**
      * Método usado para solicitar um saque
-     * @param {number} amount - Valor de deseja sacar
-     * @param {string|object} customer - Dados do cliente ou ID do cliente já criado anteriormente
-     * @param {string} methodCurrency - Método de saque, ex: PIX
-     * @param {object} pixKey - Chave Pix - { key: "...", type: "PHONE" | "CPF" | "CNPJ" | "EMAIL" | "RANDOM" }
+     * @param float $amount - Valor de deseja sacar
+     * @param string|Customer $customer - Dados do cliente ou ID do cliente já criado anteriormente
+     * @param MethodCurrency $methodCurrency - Método de saque, ex: PIX
+     * @param PixKeyParam $pixKey - Chave Pix - { key: "...", type: "PHONE" | "CPF" | "CNPJ" | "EMAIL" | "RANDOM" }
+     * @return Withdraw
      */
-    public function withdrawFiat(Float $amount, $customerId, $methodCurrency, $pixKey)
+    public function withdrawFiat(float $amount, string|Customer $customerId, MethodCurrency $methodCurrency, PixKeyParam $pixKey): Withdraw
     {
         $this->verifyLogged();
 
@@ -685,13 +702,14 @@ class XGate
     }
     /**
      * Método usado para solicitar um saque convertendo cripto moeda para moeda fiduciária.
-     * @param {number} amount - Valor de deseja sacar
-     * @param {string|object} customer - Dados do cliente ou ID do cliente já criado anteriormente
-     * @param {string} methodCryptocurrency - Cripto moeda para conversão, ex: USDT
-     * @param {string} methodCurrency - Moeda base, ex: PIX
-     * @param {object} pixKey - Chave Pix - { key: "...", type: "PHONE" | "CPF" | "CNPJ" | "EMAIL" | "RANDOM" }
+     * @param float $amount - Valor de deseja sacar
+     * @param string|Customer $customer - Dados do cliente ou ID do cliente já criado anteriormente
+     * @param MethodCryptocurrency $methodCryptocurrency - Cripto moeda para conversão, ex: USDT
+     * @param MethodCurrency $methodCurrency - Moeda base, ex: PIX
+     * @param PixKeyParam $pixKey - Chave Pix - { key: "...", type: "PHONE" | "CPF" | "CNPJ" | "EMAIL" | "RANDOM" }
+     * @return Withdraw
      */
-    public function withdrawConversionCryptoToFiat(Float $amount, $customerId, $methodCryptocurrency, $methodCurrency, $pixKey)
+    public function withdrawConversionCryptoToFiat(float $amount, string|Customer $customerId, MethodCryptocurrency $methodCryptocurrency, MethodCurrency $methodCurrency, PixKeyParam $pixKey): Withdraw
     {
         $this->verifyLogged();
 
@@ -723,13 +741,14 @@ class XGate
     }
     /**
      * Método usado para solicitar um saque convertendo cripto moeda para moeda fiduciária.
-     * @param {number} amount - Valor de deseja sacar
-     * @param {string|object} customer - Dados do cliente ou ID do cliente já criado anteriormente
-     * @param {string} methodBlockchain - Rede blockchain, ex: USDT
-     * @param {string} methodCryptocurrency - Cripto moeda, ex: PIX
-     * @param {object} walletkey - Chave pública, ex: 0x12***********
+     * @param float $amount - Valor de deseja sacar
+     * @param string|Customer $customer - Dados do cliente ou ID do cliente já criado anteriormente
+     * @param MethodBlockchain $methodBlockchain - Rede blockchain, ex: USDT
+     * @param MethodCryptocurrency $methodCryptocurrency - Cripto moeda, ex: PIX
+     * @param string $walletkey - Chave pública, ex: 0x12***********
+     * @return Withdraw
      */
-    public function withdrawExternalWallet(Float $amount, $customerId, $blockchainName, $cryptoName, $walletKey)
+    public function withdrawExternalWallet(float $amount, string|Customer $customerId, MethodBlockchain $blockchainName, MethodCryptocurrency $cryptoName, string $walletKey): Withdraw
     {
         $this->verifyLogged();
 
@@ -768,10 +787,11 @@ class XGate
     // ? PIX
     /**
      * Método usado para criar uma chave pix para o cliente
-     * @param {string|object} customer - Dados do cliente ou ID do cliente já criado anteriormente
-     * @param {object} body - Chave Pix - { key: "...", type: "PHONE" | "CPF" | "CNPJ" | "EMAIL" | "RANDOM" }
+     * @param string|Customer $customer - Dados do cliente ou ID do cliente já criado anteriormente
+     * @param PixKeyParam $body - Chave Pix - { key: "...", type: "PHONE" | "CPF" | "CNPJ" | "EMAIL" | "RANDOM" }
+     * @return PixKeyCreate
      */
-    public function pixKeyCreate($customerId, $body)
+    public function pixKeyCreate(string|Customer $customerId, PixKeyParam $body): PixKeyCreate
     {
         $this->verifyLogged();
 
@@ -787,9 +807,10 @@ class XGate
     }
     /**
      * Método usado para buscar todas as chaves pix do cliente
-     * @param {string|object} customer - Dados do cliente ou ID do cliente já criado anteriormente
+     * @param string|Customer $customer - Dados do cliente ou ID do cliente já criado anteriormente
+     * @return PixKey[]
      */
-    public function pixKeyGetAll($customerId)
+    public function pixKeyGetAll(string|Customer $customerId): array
     {
         $this->verifyLogged();
 
@@ -804,10 +825,11 @@ class XGate
     }
     /**
      * Método usado para deletar uma chave pix do cliente
-     * @param {string} customerId - ID do cliente já criado anteriormente
-     * @param {string} pixKeyId - ID da chave pix do cliente
+     * @param string $customerId - ID do cliente já criado anteriormente
+     * @param string $pixKeyId - ID da chave pix do cliente
+     * @return Message
      */
-    public function pixKeyDelete($customerId, $pixKeyId)
+    public function pixKeyDelete(string $customerId, string $pixKeyId): Message
     {
         $this->verifyLogged();
 

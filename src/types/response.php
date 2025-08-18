@@ -235,12 +235,12 @@ class BalanceCurrencyCurrency {
 }
 
 class BalanceCryptocurrency {
-    public BalanceCurrencyCryptocurrency $cryptocurrency;
+    public BalanceCryptocurrencyCryptocurrency $cryptocurrency;
     public float $totalAmount;
     public float $totalHeld;
 
     public function __construct(
-        BalanceCurrencyCryptocurrency $cryptocurrency,
+        BalanceCryptocurrencyCryptocurrency $cryptocurrency,
         float $totalAmount,
         float $totalHeld,
     ){
@@ -250,7 +250,7 @@ class BalanceCryptocurrency {
     }
 }
 
-class BalanceCurrencyCryptocurrency {
+class BalanceCryptocurrencyCryptocurrency {
     public string $name;
     public string $type;
 
@@ -547,4 +547,62 @@ class Webhook {
         $this->externalWebhookUrl = $externalWebhookUrl;
         $this->name = $name;
     }
+}
+
+class Customer {
+    public string $name;
+    public ?string $email;
+    public ?string $password;
+    public ?Phone $phone;
+
+    public function __construct(
+        string $name,
+        string $email,
+        string $password,
+        Phone $phone,
+    ){
+        $this->name = $name;
+        $this->email = $email;
+        $this->password = $password;
+        $this->phone = $phone;
+    }
+}
+  
+enum PixKeyParamType: string
+  {
+    case PHONE = 'PHONE';
+    case CPF = 'CPF';
+    case CNPJ = 'CNPJ';
+    case EMAIL = 'EMAIL';
+    case RANDOM = 'RANDOM';
+  }
+class PixKeyParam {
+    public string $key;
+    public PixKeyParamType $type;
+
+    public function __construct(
+        string $key,
+        PixKeyParamType $type,
+    ){
+        $this->key = $key;
+        $this->type = $type;
+    }
+}
+
+enum MethodCurrency: string
+{
+    case PIX = 'PIX';
+}
+
+enum MethodCryptocurrency: string
+{
+    case USDT = 'USDT';
+}
+enum MethodBlockchain: string
+{
+    case ETHEREUM = 'Ethereum';
+    case ERC20 = 'ERC-20';
+
+    case BEP20 = 'BEP-20';
+    case POLYGON = 'Polygon';
 }
