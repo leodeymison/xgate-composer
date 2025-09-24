@@ -158,7 +158,7 @@ class XGate
     // ? COMPANY
     /**
      * Método usado para buscar o saldo na sua conta XGate
-     * @param {object} filter - Filtra por uma moeda ou cryptomoeda que você deseja saber o saldo, caso esse parâmetro seja ignorado, vai ser retornado todas as cryptomoedas e moedas disponível na sua conta, juntamente com o saldo de cada uma delas.
+     * @param CurrencyBalance|CryptoBalance|null $filter - Filtra por uma moeda ou cryptomoeda que você deseja saber o saldo, caso esse parâmetro seja ignorado, vai ser retornado todas as cryptomoedas e moedas disponível na sua conta, juntamente com o saldo de cada uma delas.
      * @return (BalanceCurrency|BalanceCryptocurrency)[]
      */
     public function getBalance(CurrencyBalance|CryptoBalance|null $filter = null): array
@@ -166,13 +166,49 @@ class XGate
         $this->verifyLogged();
         try {
             $body = [];
-            if ($filter) {
-                if (isset($filter['coinGecko'])) {
-                    $body['cryptocurrency'] = $filter;
+
+            if (!empty($filter)) {
+                if (property_exists($filter, "currencyId")) {
+                    $deposits = $this->getCurrenciesDeposit();
+                    $depositsFilter = array_filter($deposits, function ($item) use ($filter) {
+                        return $item->_id === $filter->currencyId;
+                    });
+
+                    if (!empty($depositsFilter)) {
+                        $body = [
+                            "currency" => array_values($depositsFilter)[0]
+                        ];
+                    } else {
+                        $withdraw = $this->getCurrenciesWithdraw();
+                        $withdrawFilter = array_filter($withdraw, function ($item) use ($filter) {
+                            return $item->_id === $filter->currencyId;
+                        });
+                        $body = [
+                            "currency" => array_values($withdrawFilter)[0]
+                        ];
+                    }
                 } else {
-                    $body['currency'] = $filter;
+                    $deposits = $this->getCryptocurrenciesDeposit();
+                    $depositsFilter = array_filter($deposits, function ($item) use ($filter) {
+                        return $item->_id === $filter->cryptocurrencyId;
+                    });
+
+                    if (!empty($depositsFilter)) {
+                        $body = [
+                            "cryptocurrency" => array_values($depositsFilter)[0]
+                        ];
+                    } else {
+                        $withdraw = $this->getCryptocurrenciesWithdraw();
+                        $withdrawFilter = array_filter($withdraw, function ($item) use ($filter) {
+                            return $item->_id === $filter->cryptocurrencyId;
+                        });
+                        $body = [
+                            "cryptocurrency" => array_values($withdrawFilter)[0]
+                        ];
+                    }
                 }
             }
+
             $response = $this->api->post('/balance/company', [
                 'json' => $body,
                 'headers' => $this->getHeader(),
@@ -186,7 +222,7 @@ class XGate
     // ? SUB COMPANY
     /**
      * Criar uma sub conta
-     * @param {object} dataParam - Object com as informações da sub conta. { user: {...}, deposit: {...}, withdraw: {...} }
+     * @param SubCompanyCreate $dataParam - Object com as informações da sub conta. { user: {...}, deposit: {...}, withdraw: {...} }
      * @return SubCompanyCreate
      */
     public function createSubCompany(SubCompanyCreate $dataParam): SubCompanyCreate {
@@ -198,7 +234,7 @@ class XGate
         ];
         try {
             $body = [
-                'user' => $dataParam['user'], // equivalente ao dataParam.user
+                'user' => $dataParam->user, // equivalente ao dataParam.user
                 'deposit' => [
                     'blockchainNetworks' => [],
                     'cryptocurrencies' => [],
@@ -376,7 +412,7 @@ class XGate
     }
     /**
      * Adiciona o primeiro IP de uma sub conta
-     * @param {string} ip - Endereço IPV4 ou IPV6
+     * @param string $ip - Endereço IPV4 ou IPV6
      * @return SubCompanyCreate
      */
     public function addFirstIP(string $ip): Message {
@@ -395,7 +431,7 @@ class XGate
     }
     /**
      * Adiciona o primeiro webhook de uma sub conta
-     * @param {object} body - Um object{} com dois parâmetros: "externalWebhookUrl" = URL externa do WebHook e "name" = Para identificar o Webhook pelo nome
+     * @param Webhook $body - Um object{} com dois parâmetros: "externalWebhookUrl" = URL externa do WebHook e "name" = Para identificar o Webhook pelo nome
      * @return SubCompanyCreate
      */
     public function addFirstWebhook(Webhook $body): Message {
@@ -472,9 +508,12 @@ class XGate
         $cryptos = $this->getCryptocurrenciesDeposit();
         $crypto = array_filter($cryptos, fn($c) => $c['name'] === $cryptoName);
         $crypto = array_values($crypto)[0] ?? null;
-
-        if (!$currency || !$crypto) {
-            throw new XGateError(new Error(), "Moeda ou Cripto não habilitada na conta", 400);
+        
+        if (!$crypto) {
+            throw new XGateError(new Error(), sprintf("Crypto moeda %s não está habilitada na sua conta", $crypto), 400);
+        }
+        if (!$currency) {
+            throw new XGateError(new Error(), sprintf("Moeda %s não está habilitada na sua conta", $currency), 400);
         }
 
         try {
@@ -517,7 +556,7 @@ class XGate
         }
 
         try {
-            $response = $this->api->post(sprintf("/deposit/conversion/%s/%s", mb_strtolower($currency[0]->name), mb_strtolower($currency[0]->type)), [
+            $response = $this->api->post(sprintf("/withdraw/conversion/%s/%s", mb_strtolower($currency[0]->name), mb_strtolower($currency[0]->type)), [
                 'json' => [
                     'amount' => $amount,
                     'cryptocurrency' => $cryptocurrency[0],
@@ -545,7 +584,7 @@ class XGate
         $blockchain = array_values($blockchain)[0] ?? null;
 
         if (!$blockchain) {
-            throw new XGateError(new Error(), sprintf("Rede Blockchan %s não está habilitada na sua conta", $methodBlockchain), 400);
+            throw new XGateError(new Error(), sprintf("Rede Blockchain %s não está habilitada na sua conta", $methodBlockchain), 400);
         }
 
         $cryptocurrency = array_filter($blockchain[0]->cryptocurrencies, fn($c) => $c->cryptocurrency['name'] === $methodCryptocurrency);
@@ -570,7 +609,7 @@ class XGate
             ]);
             return json_decode($response->getBody(), true);
         } catch (RequestException $e) {
-            throw new XGateError($e, "Erro ao buscar redes blockchainscde de depósito disponíveis para depósito na sua conta", 500);
+            throw new XGateError($e, "Erro ao buscar redes blockchains de depósito disponíveis para depósito na sua conta", 500);
         }
     }
 
@@ -582,7 +621,7 @@ class XGate
      * @param MethodCurrency $methodCurrency - Método de depósito, ex: PIX
      * @return Deposit
      */
-    public function depositFiat(float $amount, string|Customer $customerId, MethodCurrency $methodCurrency): Deposit
+    public function depositFiat(float $amount, string|Customer $customer, MethodCurrency $methodCurrency): Deposit
     {
         $this->verifyLogged();
 
@@ -591,7 +630,20 @@ class XGate
         $currency = array_values($currency)[0] ?? null;
 
         if (!$currency) {
-            throw new XGateError(new Error(), "Moeda $methodCurrency não habilitada na conta", 400);
+            throw new XGateError(
+                new Error(), 
+                sprintf("Moeda %s não habilitada na conta", $methodCurrency),
+                400
+            );
+        }
+
+        $customerId = "";
+
+        if (!is_string($customer)) {
+            $resCustomerCreate = $this->customerCreate($customer);
+            $customerId = $resCustomerCreate->customer->_id ?? null;
+        } else {
+            $customerId = $customer;
         }
 
         try {
