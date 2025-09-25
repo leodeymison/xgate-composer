@@ -55,6 +55,26 @@ class XGate
         }
     }
 
+    private function verifyEpecificPixKeyInCustomerWithResultReverse(string $customerId, PixKeyParam $pixKey)
+    {
+        // Chama o serviço que retorna as chaves PIX do cliente
+        $pixKeys = $this->pixKeyGetAll($customerId);
+
+        // Filtra procurando a chave que corresponda
+        $pixKeyFilter = array_filter($pixKeys, function ($item) use ($pixKey) {
+            return isset($item['key']) && $item['key'] === $pixKey->key;
+        });
+
+        // Reorganiza os índices do array filtrado
+        $pixKeyFilter = array_values($pixKeyFilter);
+
+        if (count($pixKeyFilter) > 0) {
+            return $pixKeyFilter[0]; // Retorna a primeira chave encontrada
+        }
+
+        return false; // Se não encontrou, retorna false
+    }
+
     // ? CURRENCIES
     /**
      * Método usado para buscar todas as moedas fiduciárias disponível para depósitos na sua conta XGate
@@ -668,7 +688,7 @@ class XGate
      * @param MethodCryptocurrency $methodCryptocurrency - Método de conversão, ex: USDT
      * @return Deposit
      */
-    public function depositConversionFiatToCrypto(float $amount, string|Customer $customerId, MethodCurrency $methodCurrency, MethodCryptocurrency $methodCryptocurrency): Deposit
+    public function depositConversionFiatToCrypto(float $amount, string|Customer $customer, MethodCurrency $methodCurrency, MethodCryptocurrency $methodCryptocurrency): Deposit
     {
         $this->verifyLogged();
 
@@ -678,8 +698,28 @@ class XGate
         $cryptos = $this->getCryptocurrenciesDeposit();
         $crypto = array_values(array_filter($cryptos, fn($c) => $c['name'] === $methodCryptocurrency))[0] ?? null;
 
-        if (!$currency || !$crypto) {
-            throw new XGateError(new Error(), "Moeda ou Cripto não habilitada na conta", 400);
+        if (!$currency) {
+            throw new XGateError(
+                new Error(), 
+                sprintf("Moeda %s não habilitada na conta", $methodCurrency),
+                400
+            );
+        }
+        if (!$crypto) {
+            throw new XGateError(
+                new Error(), 
+                sprintf("Cripto moeda %s não habilitada na conta", $methodCryptocurrency),
+                400
+            );
+        }
+
+        $customerId = "";
+
+        if (!is_string($customer)) {
+            $resCustomerCreate = $this->customerCreate($customer);
+            $customerId = $resCustomerCreate->customer->_id ?? null;
+        } else {
+            $customerId = $customer;
         }
 
         try {
@@ -702,14 +742,24 @@ class XGate
      * @param string|Customer $customer - Dados do cliente ou ID do cliente já criado anteriormente
      * @return Wallet[]
      */
-    public function depositGenerateCryptoWallet(string|Customer $customerId): array
+    public function depositGenerateCryptoWallet(string|Customer $customer): array
     {
         $this->verifyLogged();
 
         try {
-            $response = $this->api->get("/crypto/customer/{$customerId}/wallet", [
+            $customerId = "";
+
+            if (!is_string($customer)) {
+                $resCustomerCreate = $this->customerCreate($customer);
+                $customerId = $resCustomerCreate->customer->_id ?? null;
+            } else {
+                $customerId = $customer;
+            }
+
+            $response = $this->api->get(sprintf("/crypto/customer/%s/wallet", $customerId), [
                 'headers' => $this->getHeader(),
             ]);
+
             return json_decode($response->getBody(), true);
         } catch (RequestException $e) {
             throw new XGateError($e, "Erro ao gerar carteira cripto: ", 500);
@@ -725,7 +775,7 @@ class XGate
      * @param PixKeyParam $pixKey - Chave Pix - { key: "...", type: "PHONE" | "CPF" | "CNPJ" | "EMAIL" | "RANDOM" }
      * @return Withdraw
      */
-    public function withdrawFiat(float $amount, string|Customer $customerId, MethodCurrency $methodCurrency, PixKeyParam $pixKey): Withdraw
+    public function withdrawFiat(float $amount, string|Customer $customer, MethodCurrency $methodCurrency, PixKeyParam $pixKey): Withdraw
     {
         $this->verifyLogged();
 
@@ -734,7 +784,25 @@ class XGate
         $currency = array_values($currency)[0] ?? null;
 
         if (!$currency) {
-            throw new XGateError(new Error(), "Moeda $methodCurrency não habilitada na conta", 400);
+            throw new XGateError(new Error(), sprintf("Moeda %s não habilitada na sua conta", $methodCurrency), 400);
+        }
+
+        $customerId = "";
+
+        if (!is_string($customer)) {
+            $resCustomerCreate = $this->customerCreate($customer);
+            $customerId = $resCustomerCreate->customer->_id ?? null;
+        } else {
+            $customerId = $customer;
+        }
+
+        $pixKetEnd = null;
+        $pixKeyverify = $this->verifyEpecificPixKeyInCustomerWithResultReverse($customerId, $pixKey);
+
+        if ($pixKeyverify) {
+            $pixKetEnd = $pixKeyverify;
+        } else {
+            $pixKetEnd = ($this->pixKeyCreate($customerId, $pixKey))->key;
         }
 
         try {
@@ -743,7 +811,7 @@ class XGate
                     'amount' => $amount,
                     'customerId' => $customerId,
                     'currency' => $currency,
-                    'pixKey' => $pixKey
+                    'pixKey' => $pixKetEnd
                 ],
                 'headers' => $this->getHeader(),
             ]);
@@ -761,7 +829,7 @@ class XGate
      * @param PixKeyParam $pixKey - Chave Pix - { key: "...", type: "PHONE" | "CPF" | "CNPJ" | "EMAIL" | "RANDOM" }
      * @return Withdraw
      */
-    public function withdrawConversionCryptoToFiat(float $amount, string|Customer $customerId, MethodCryptocurrency $methodCryptocurrency, MethodCurrency $methodCurrency, PixKeyParam $pixKey): Withdraw
+    public function withdrawConversionCryptoToFiat(float $amount, string|Customer $customer, MethodCryptocurrency $methodCryptocurrency, MethodCurrency $methodCurrency, PixKeyParam $pixKey): Withdraw
     {
         $this->verifyLogged();
 
@@ -771,9 +839,39 @@ class XGate
         $cryptos = $this->getCryptocurrenciesDeposit();
         $crypto = array_values(array_filter($cryptos, fn($c) => $c['name'] === $methodCryptocurrency))[0] ?? null;
 
-        if (!$currency || !$crypto) {
-            throw new XGateError(new Error(), "Moeda ou Cripto não habilitada na conta", 400);
+        if (!$currency) {
+            throw new XGateError(
+                new Error(), 
+                sprintf("Moeda %s não habilitada na conta", $methodCurrency),
+                400
+            );
         }
+        if (!$crypto) {
+            throw new XGateError(
+                new Error(), 
+                sprintf("Cripto moeda %s não habilitada na conta", $methodCryptocurrency),
+                400
+            );
+        }
+
+        $customerId = "";
+
+        if (!is_string($customer)) {
+            $resCustomerCreate = $this->customerCreate($customer);
+            $customerId = $resCustomerCreate->customer->_id ?? null;
+        } else {
+            $customerId = $customer;
+        }
+
+        $pixKetEnd = null;
+        $pixKeyverify = $this->verifyEpecificPixKeyInCustomerWithResultReverse($customerId, $pixKey);
+
+        if ($pixKeyverify) {
+            $pixKetEnd = $pixKeyverify;
+        } else {
+            $pixKetEnd = ($this->pixKeyCreate($customerId, $pixKey))->key;
+        }
+
 
         try {
             $response = $this->api->post('/withdraw', [
@@ -782,7 +880,7 @@ class XGate
                     'customerId' => $customerId,
                     'currency' => $currency,
                     'cryptocurrency' => $crypto,
-                    'pixKey' => $pixKey
+                    'pixKey' => $pixKetEnd
                 ],
                 'headers' => $this->getHeader(),
             ]);
@@ -800,23 +898,61 @@ class XGate
      * @param string $walletkey - Chave pública, ex: 0x12***********
      * @return Withdraw
      */
-    public function withdrawExternalWallet(float $amount, string|Customer $customerId, MethodBlockchain $blockchainName, MethodCryptocurrency $cryptoName, string $walletKey): Withdraw
+    public function withdrawExternalWallet(
+        float $amount, 
+        string|Customer $customer, 
+        MethodBlockchain $methodBlockchainNetwork, 
+        MethodCryptocurrency $methodCryptocurrency,
+        string $walletKey
+    ): Withdraw
     {
         $this->verifyLogged();
 
-        $response = $this->api->get('/withdraw/company/blockchain-networks', [
-            'headers' => $this->getHeader()
-        ]);
-        $blockchains = json_decode($response->getBody(), true);
+        $blockchains = $this->getBlockchainWithdraw();
+        $blockchain = array_filter($blockchains, fn($c) => $c->name === $methodBlockchainNetwork);
 
-        $blockchain = array_values(array_filter($blockchains, fn($b) => $b['name'] === $blockchainName))[0] ?? null;
-        if (!$blockchain) throw new XGateError(new Error(), "Blockchain $blockchainName não encontrada", 400);
+        if (!count($blockchain, COUNT_RECURSIVE)) {
+            throw new XGateError(
+                new Error(), 
+                sprintf("Rede blockchain %s não habilitada na sua conta", 
+                $methodBlockchainNetwork
+            ), 
+            400
+            );
+        }
 
-        $cryptoData = array_values(array_filter($blockchain['cryptocurrencies'], fn($c) => $c['cryptocurrency']['name'] === $cryptoName))[0] ?? null;
-        if (!$cryptoData) throw new XGateError(new Error(), "Cripto $cryptoName não encontrada nesta rede", 400);
+        $blockchain = array_values($blockchain)[0];
 
-        if ($cryptoData['minWithdraw'] > $amount) {
-            throw new XGateError(new Error(), "Valor mínimo para saque é {$cryptoData['minWithdraw']}", 400);
+        // Filtra as criptomoedas dentro da blockchain
+        $cryptocurrencies = array_filter($blockchain->cryptocurrencies, function ($item) use ($methodCryptocurrency) {
+            return $item->cryptocurrency->name === $methodCryptocurrency;
+        });
+
+        if (!count($cryptocurrencies, COUNT_RECURSIVE)) {
+            throw new XGateError(
+                new Error(), 
+                sprintf("Cripto moeda %s não habilitada na conta", $methodCryptocurrency),
+                400
+            );
+        }
+
+        $cryptocurrency = array_values($cryptocurrencies)[0];
+
+        if ($cryptocurrency->minWithdraw > $amount) {
+            throw new XGateError(
+                new Error(), 
+                sprintf("Saque mínimo de %s na Rede %s é de %s %s", $methodCryptocurrency, $methodBlockchainNetwork, $cryptocurrency->minWithdraw, $methodCryptocurrency),
+                400
+            );
+        }
+
+        $customerId = "";
+
+        if (!is_string($customer)) {
+            $resCustomerCreate = $this->customerCreate($customer);
+            $customerId = $resCustomerCreate->customer->_id ?? null;
+        } else {
+            $customerId = $customer;
         }
 
         try {
@@ -825,7 +961,7 @@ class XGate
                     'amount' => $amount,
                     'customerId' => $customerId,
                     'blockchainNetwork' => $blockchain,
-                    'cryptocurrency' => $cryptoData['cryptocurrency'],
+                    'cryptocurrency' => $cryptocurrency->cryptocurrency,
                     'wallet' => $walletKey
                 ],
                 'headers' => $this->getHeader(),
@@ -862,7 +998,7 @@ class XGate
      * @param string|Customer $customer - Dados do cliente ou ID do cliente já criado anteriormente
      * @return PixKey[]
      */
-    public function pixKeyGetAll(string|Customer $customerId): array
+    public function pixKeyGetAll(string|Customer $customerId)
     {
         $this->verifyLogged();
 
