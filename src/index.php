@@ -979,18 +979,28 @@ class XGate
      * @param PixKeyParam $body - Chave Pix - { key: "...", type: "PHONE" | "CPF" | "CNPJ" | "EMAIL" | "RANDOM" }
      * @return PixKeyCreate
      */
-    public function pixKeyCreate(string|Customer $customerId, PixKeyParam $body): PixKeyCreate
+    public function pixKeyCreate(string|Customer $customer, PixKeyParam $body): PixKeyCreate
     {
         $this->verifyLogged();
 
         try {
+            $customerId = "";
+
+            if (!is_string($customer)) {
+                $resCustomerCreate = $this->customerCreate($customer);
+                $customerId = $resCustomerCreate->customer->_id ?? null;
+            } else {
+                $customerId = $customer;
+            }
+
             $response = $this->api->post("/pix/customer/{$customerId}/key", [
                 'json' => $body,
                 'headers' => $this->getHeader(),
             ]);
+
             return json_decode($response->getBody(), true);
         } catch (RequestException $e) {
-            throw new XGateError($e, "Erro ao criar chave PIX: ", 500);
+            throw new XGateError($e, "Erro ao criar chave pix para um cliente", 500);
         }
     }
     /**
@@ -998,17 +1008,27 @@ class XGate
      * @param string|Customer $customer - Dados do cliente ou ID do cliente já criado anteriormente
      * @return PixKey[]
      */
-    public function pixKeyGetAll(string|Customer $customerId)
+    public function pixKeyGetAll(string|Customer $customer)
     {
         $this->verifyLogged();
 
         try {
+            $customerId = "";
+
+            if (!is_string($customer)) {
+                $resCustomerCreate = $this->customerCreate($customer);
+                $customerId = $resCustomerCreate->customer->_id ?? null;
+            } else {
+                $customerId = $customer;
+            }
+
             $response = $this->api->get("/pix/customer/{$customerId}/key", [
                 'headers' => $this->getHeader(),
             ]);
+
             return json_decode($response->getBody(), true);
         } catch (RequestException $e) {
-            throw new XGateError($e, "Erro ao buscar chaves PIX: ", 500);
+            throw new XGateError($e, "Erro ao buscar chaves pix de um cliente", 500);
         }
     }
     /**
@@ -1017,17 +1037,27 @@ class XGate
      * @param string $pixKeyId - ID da chave pix do cliente
      * @return Message
      */
-    public function pixKeyDelete(string $customerId, string $pixKeyId): Message
+    public function pixKeyDelete(string $customer, string $pixKeyId): Message
     {
         $this->verifyLogged();
 
         try {
+            $customerId = "";
+
+            if (!is_string($customer)) {
+                $resCustomerCreate = $this->customerCreate($customer);
+                $customerId = $resCustomerCreate->customer->_id ?? null;
+            } else {
+                $customerId = $customer;
+            }
+
             $response = $this->api->delete("/pix/customer/{$customerId}/key/remove/{$pixKeyId}", [
                 'headers' => $this->getHeader(),
             ]);
+
             return json_decode($response->getBody(), true);
         } catch (RequestException $e) {
-            throw new XGateError($e, "Erro ao deletar chave PIX: ", 500);
+            throw new XGateError($e, "Erro ao deletar chave pix de um cliente", 500);
         }
     }
 }
