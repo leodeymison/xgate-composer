@@ -435,7 +435,7 @@ class XGate
      * @param string $ip - Endereço IPV4 ou IPV6
      * @return SubCompanyCreate
      */
-    public function addFirstIP(string $ip): Message {
+    public function subCompanyAddFirstIP(string $ip): Message {
         $this->verifyLogged();
         try {
             $response = $this->api->post('/withdraw/allowed-ip/subaccount', [
@@ -454,7 +454,7 @@ class XGate
      * @param Webhook $body - Um object{} com dois parâmetros: "externalWebhookUrl" = URL externa do WebHook e "name" = Para identificar o Webhook pelo nome
      * @return SubCompanyCreate
      */
-    public function addFirstWebhook(Webhook $body): Message {
+    public function subCompanyAddFirstWebhook(Webhook $body): Message {
         $this->verifyLogged();
         try {
             $response = $this->api->post('/webhook/subaccount', [
@@ -522,11 +522,11 @@ class XGate
         $this->verifyLogged();
 
         $currencies = $this->getCurrenciesDeposit();
-        $currency = array_filter($currencies, fn($c) => $c['type'] === $currencyType);
+        $currency = array_filter($currencies, fn($c) => $c['type'] === $currencyType->value);
         $currency = array_values($currency)[0] ?? null;
 
         $cryptos = $this->getCryptocurrenciesDeposit();
-        $crypto = array_filter($cryptos, fn($c) => $c['name'] === $cryptoName);
+        $crypto = array_filter($cryptos, fn($c) => $c['name'] === $cryptoName->value);
         $crypto = array_values($crypto)[0] ?? null;
         
         if (!$crypto) {
@@ -561,18 +561,18 @@ class XGate
         $this->verifyLogged();
 
         $currencies = $this->getCurrenciesWithdraw();
-        $currency = array_filter($currencies, fn($c) => $c['type'] === $methodCurrency);
+        $currency = array_filter($currencies, fn($c) => $c['type'] === $methodCurrency->value);
         $currency = array_values($currency)[0] ?? null;
 
         $cryptocurrencies = $this->getCryptocurrenciesWithdraw();
-        $cryptocurrency = array_filter($cryptocurrencies, fn($c) => $c['name'] === $methodCryptocurrency);
+        $cryptocurrency = array_filter($cryptocurrencies, fn($c) => $c['name'] === $methodCryptocurrency->value);
         $cryptocurrency = array_values($cryptocurrency)[0] ?? null;
 
         if (!$cryptocurrency) {
             throw new XGateError(new Error(), sprintf("Crypto moeda %s não está habilitada na sua conta", $cryptocurrency), 400);
         }
         if (!$currency) {
-            throw new XGateError(new Error(), sprintf("Moeda %s não está habilitada na sua conta", $methodCurrency), 400);
+            throw new XGateError(new Error(), sprintf("Moeda %s não está habilitada na sua conta", $methodCurrency->value), 400);
         }
 
         try {
@@ -600,22 +600,22 @@ class XGate
         $this->verifyLogged();
 
         $blockchains = $this->getBlockchainWithdraw();
-        $blockchain = array_filter($blockchains, fn($c) => $c['type'] === $methodBlockchain);
+        $blockchain = array_filter($blockchains, fn($c) => $c['type'] === $methodBlockchain->value);
         $blockchain = array_values($blockchain)[0] ?? null;
 
         if (!$blockchain) {
-            throw new XGateError(new Error(), sprintf("Rede Blockchain %s não está habilitada na sua conta", $methodBlockchain), 400);
+            throw new XGateError(new Error(), sprintf("Rede Blockchain %s não está habilitada na sua conta", $methodBlockchain->value), 400);
         }
 
-        $cryptocurrency = array_filter($blockchain[0]->cryptocurrencies, fn($c) => $c->cryptocurrency['name'] === $methodCryptocurrency);
+        $cryptocurrency = array_filter($blockchain[0]->cryptocurrencies, fn($c) => $c->cryptocurrency['name'] === $methodCryptocurrency->value);
         $cryptocurrency = array_values($cryptocurrency)[0] ?? null;
 
         if (!$cryptocurrency) {
-            throw new XGateError(new Error(), sprintf("Crypto moeda %s não está habilitada na sua conta", $methodCryptocurrency), 400);
+            throw new XGateError(new Error(), sprintf("Crypto moeda %s não está habilitada na sua conta", $methodCryptocurrency->value), 400);
         }
 
         if (!$cryptocurrency[0]->minWithdraw > $amount) {
-            throw new XGateError(new Error(), sprintf("Saque mínimo de %s na Rede %s é de %s %s", $methodCryptocurrency, $methodBlockchain, $cryptocurrency[0]->minWithdraw, $methodCryptocurrency), 400);
+            throw new XGateError(new Error(), sprintf("Saque mínimo de %s na Rede %s é de %s %s", $methodCryptocurrency->value, $methodBlockchain->value, $cryptocurrency[0]->minWithdraw, $methodCryptocurrency->value), 400);
         }
 
         try {
@@ -646,13 +646,13 @@ class XGate
         $this->verifyLogged();
 
         $currencies = $this->getCurrenciesDeposit();
-        $currency = array_filter($currencies, fn($c) => $c['type'] === $methodCurrency);
+        $currency = array_filter($currencies, fn($c) => $c['type'] === $methodCurrency->value);
         $currency = array_values($currency)[0] ?? null;
 
         if (!$currency) {
             throw new XGateError(
                 new Error(), 
-                sprintf("Moeda %s não habilitada na conta", $methodCurrency),
+                sprintf("Moeda %s não habilitada na conta", $methodCurrency->value),
                 400
             );
         }
@@ -693,22 +693,22 @@ class XGate
         $this->verifyLogged();
 
         $currencies = $this->getCurrenciesDeposit();
-        $currency = array_values(array_filter($currencies, fn($c) => $c['type'] === $methodCurrency))[0] ?? null;
+        $currency = array_values(array_filter($currencies, fn($c) => $c['type'] === $methodCurrency->value))[0] ?? null;
 
         $cryptos = $this->getCryptocurrenciesDeposit();
-        $crypto = array_values(array_filter($cryptos, fn($c) => $c['name'] === $methodCryptocurrency))[0] ?? null;
+        $crypto = array_values(array_filter($cryptos, fn($c) => $c['name'] === $methodCryptocurrency->value))[0] ?? null;
 
         if (!$currency) {
             throw new XGateError(
                 new Error(), 
-                sprintf("Moeda %s não habilitada na conta", $methodCurrency),
+                sprintf("Moeda %s não habilitada na conta", $methodCurrency->value),
                 400
             );
         }
         if (!$crypto) {
             throw new XGateError(
                 new Error(), 
-                sprintf("Cripto moeda %s não habilitada na conta", $methodCryptocurrency),
+                sprintf("Cripto moeda %s não habilitada na conta", $methodCryptocurrency->value),
                 400
             );
         }
@@ -780,11 +780,11 @@ class XGate
         $this->verifyLogged();
 
         $currencies = $this->getCurrenciesWithdraw();
-        $currency = array_filter($currencies, fn($c) => $c['type'] === $methodCurrency);
+        $currency = array_filter($currencies, fn($c) => $c['type'] === $methodCurrency->value);
         $currency = array_values($currency)[0] ?? null;
 
         if (!$currency) {
-            throw new XGateError(new Error(), sprintf("Moeda %s não habilitada na sua conta", $methodCurrency), 400);
+            throw new XGateError(new Error(), sprintf("Moeda %s não habilitada na sua conta", $methodCurrency->value), 400);
         }
 
         $customerId = "";
@@ -834,22 +834,22 @@ class XGate
         $this->verifyLogged();
 
         $currencies = $this->getCurrenciesWithdraw();
-        $currency = array_values(array_filter($currencies, fn($c) => $c['type'] === $methodCurrency))[0] ?? null;
+        $currency = array_values(array_filter($currencies, fn($c) => $c['type'] === $methodCurrency->value))[0] ?? null;
 
         $cryptos = $this->getCryptocurrenciesDeposit();
-        $crypto = array_values(array_filter($cryptos, fn($c) => $c['name'] === $methodCryptocurrency))[0] ?? null;
+        $crypto = array_values(array_filter($cryptos, fn($c) => $c['name'] === $methodCryptocurrency->value))[0] ?? null;
 
         if (!$currency) {
             throw new XGateError(
                 new Error(), 
-                sprintf("Moeda %s não habilitada na conta", $methodCurrency),
+                sprintf("Moeda %s não habilitada na conta", $methodCurrency->value),
                 400
             );
         }
         if (!$crypto) {
             throw new XGateError(
                 new Error(), 
-                sprintf("Cripto moeda %s não habilitada na conta", $methodCryptocurrency),
+                sprintf("Cripto moeda %s não habilitada na conta", $methodCryptocurrency->value),
                 400
             );
         }
@@ -909,13 +909,13 @@ class XGate
         $this->verifyLogged();
 
         $blockchains = $this->getBlockchainWithdraw();
-        $blockchain = array_filter($blockchains, fn($c) => $c->name === $methodBlockchainNetwork);
+        $blockchain = array_filter($blockchains, fn($c) => $c->name === $methodBlockchainNetwork->value);
 
         if (!count($blockchain, COUNT_RECURSIVE)) {
             throw new XGateError(
                 new Error(), 
                 sprintf("Rede blockchain %s não habilitada na sua conta", 
-                $methodBlockchainNetwork
+                $methodBlockchainNetwork->value
             ), 
             400
             );
@@ -925,13 +925,13 @@ class XGate
 
         // Filtra as criptomoedas dentro da blockchain
         $cryptocurrencies = array_filter($blockchain->cryptocurrencies, function ($item) use ($methodCryptocurrency) {
-            return $item->cryptocurrency->name === $methodCryptocurrency;
+            return $item->cryptocurrency->name === $methodCryptocurrency->value;
         });
 
         if (!count($cryptocurrencies, COUNT_RECURSIVE)) {
             throw new XGateError(
                 new Error(), 
-                sprintf("Cripto moeda %s não habilitada na conta", $methodCryptocurrency),
+                sprintf("Cripto moeda %s não habilitada na conta", $methodCryptocurrency->value),
                 400
             );
         }
@@ -941,7 +941,7 @@ class XGate
         if ($cryptocurrency->minWithdraw > $amount) {
             throw new XGateError(
                 new Error(), 
-                sprintf("Saque mínimo de %s na Rede %s é de %s %s", $methodCryptocurrency, $methodBlockchainNetwork, $cryptocurrency->minWithdraw, $methodCryptocurrency),
+                sprintf("Saque mínimo de %s na Rede %s é de %s %s", $methodCryptocurrency->value, $methodBlockchainNetwork->value, $cryptocurrency->minWithdraw, $methodCryptocurrency->value),
                 400
             );
         }
@@ -1037,19 +1037,12 @@ class XGate
      * @param string $pixKeyId - ID da chave pix do cliente
      * @return Message
      */
-    public function pixKeyDelete(string $customer, string $pixKeyId): Message
+    public function pixKeyDelete(string $customerId, string $pixKeyId): Message
     {
         $this->verifyLogged();
 
         try {
             $customerId = "";
-
-            if (!is_string($customer)) {
-                $resCustomerCreate = $this->customerCreate($customer);
-                $customerId = $resCustomerCreate->customer->_id ?? null;
-            } else {
-                $customerId = $customer;
-            }
 
             $response = $this->api->delete("/pix/customer/{$customerId}/key/remove/{$pixKeyId}", [
                 'headers' => $this->getHeader(),

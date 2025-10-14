@@ -27,14 +27,18 @@ npm install xgate
 
 Crie um instância da classe `Xgate` para ter acesso aos métodos.
 
-```js
-import Xgate from "./index"; // or const Xgate = require("xgate");
+```php
+require 'vendor/autoload.php';
+
+use GuzzleHttp\Client;
 
 try {
-  const xgate = new Xgate({
-    email: process.env.XGATE_EMAIL, // Seu E-mail
-    password: process.env.XGATE_PASSWORD, // Sua Senha
-  });
+  $xgate = new XGate(
+    new Account(
+      'nameemail@domain.com',
+      '**************'
+    )
+  );
 
   ...
 } catch (err) {
@@ -47,10 +51,10 @@ try {
 ```js
 // catch
 {
-    message: "...",
-    name: "XGateError",
-    status: 400, // exemplo
-    originalError: {...}
+  message: "...",
+  name: "XGateError",
+  status: 400, // exemplo
+  originalError: {...}
 }
 ```
 
@@ -58,14 +62,9 @@ try {
 
 ```js
 try {
-  return await xgate.deposit.depositFiat(
+  return $xgate->depositFiat(
     10,
-    {
-      name: "Nome do cliente",
-      phone: "5511900000000",
-      email: "client@domain.com",
-      document: "00000000000",
-    } ?? "1a0********", // {...} or ID
+    new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
     "PIX"
   );
 } catch (err) {
@@ -80,7 +79,7 @@ try {
   | name | SIM | `String` | Nome do cliente |
   | phone | NÃO | `String` | Telefone do cliente |
   | email | NÃO | `String` | E-mail do cliente |
-  | document | NÃO | `String` | Algum documento do cliete, ex: CPF |
+  | document | SIM | `String` | Algum documento do cliete, ex: CPF |
 
 - **PARÂMETRO 3:** Tipo de transação
 
@@ -104,16 +103,11 @@ Resposta:
 
 ```js
 try {
-  return await xgate.deposit.depositConversionFiatToCrypto(
+  return $xgate->depositConversionFiatToCrypto(
     10,
-    {
-      name: "Nome do cliente",
-      phone: "5511900000000",
-      email: "client@domain.com",
-      document: "00000000000",
-    } ?? "1a0********", // {...} or ID
-    "PIX",
-    "USDT"
+    new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
+    MethodCurrency::PIX,
+    MethodCryptocurrency::USDT
   );
 } catch (err) {
   return err;
@@ -127,7 +121,7 @@ try {
   | name | SIM | `String` | Nome do cliente |
   | phone | NÃO | `String` | Telefone do cliente |
   | email | NÃO | `String` | E-mail do cliente |
-  | document | NÃO | `String` | Algum documento do cliete, ex: CPF |
+  | document | SIM | `String` | Algum documento do cliete, ex: CPF |
 
 - **PARÂMETRO 3:** Tipo de transação
 - **PARÂMETRO 3:** Para qual cripto moeda quer converter
@@ -152,12 +146,9 @@ Resposta:
 
 ```js
 try {
-  return await xgate.deposit.depositGenerateCryptoWallet({
-    name: "Nome do cliente",
-    phone: "5511900000000",
-    email: "client@domain.com",
-    document: "00000000000",
-  }); // {...} or ID
+  return $xgate->depositGenerateCryptoWallet(
+    new Customer("Nome do cliente", "00000000000") ?? "1a0********" // {...} or ID
+  );
 } catch (err) {
   return err;
 }
@@ -169,7 +160,7 @@ try {
   | name | SIM | `String` | Nome do cliente |
   | phone | NÃO | `String` | Telefone do cliente |
   | email | NÃO | `String` | E-mail do cliente |
-  | document | NÃO | `String` | Algum documento do cliete, ex: CPF |
+  | document | SIM | `String` | Algum documento do cliete, ex: CPF |
 
 Resposta:
 
@@ -195,19 +186,11 @@ Resposta:
 
 ```js
 try {
-  return await xgate.withdraw.withdrawFiat(
+  return $xgate->withdrawFiat(
     10,
-    {
-      name: "Nome do cliente",
-      phone: "5511900000000",
-      email: "client@domain.com",
-      document: "00000000000",
-    } ?? "1a0********", // {...} or ID
-    "PIX",
-    {
-      key: "00000000000",
-      type: "CPF",
-    }
+    new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
+    MethodCurrency::PIX,
+    new PixKeyParam("00000000000", PixKeyParamType::CPF)
   );
 } catch (err) {
   return err;
@@ -221,7 +204,7 @@ try {
   | name | SIM | `String` | Nome do cliente |
   | phone | NÃO | `String` | Telefone do cliente |
   | email | NÃO | `String` | E-mail do cliente |
-  | document | NÃO | `String` | Algum documento do cliete, ex: CPF |
+  | document | SIM | `String` | Algum documento do cliete, ex: CPF |
 
 - **PARÂMETRO 3:** Tipo de transação
 - **PARÂMETRO 4:** Informações da chave pix
@@ -246,20 +229,12 @@ Resposta:
 
 ```js
 try {
-  return await xgate.withdraw.withdrawConversionCryptoToFiat(
+  return $xgate->withdrawConversionCryptoToFiat(
     10,
-    {
-      name: "Nome do cliente",
-      phone: "5511900000000",
-      email: "client@domain.com",
-      document: "00000000000",
-    } ?? "1a0********", // {...} or ID
-    "USDT",
-    "PIX",
-    {
-      key: "00000000000",
-      type: "CPF",
-    }
+    new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
+    MethodCryptocurrency::USDT,
+    MethodCurrency::PIX,
+    new PixKeyParam("00000000000", PixKeyParamType::CPF)
   );
 } catch (err) {
   return err;
@@ -273,7 +248,7 @@ try {
   | name | SIM | `String` | Nome do cliente |
   | phone | NÃO | `String` | Telefone do cliente |
   | email | NÃO | `String` | E-mail do cliente |
-  | document | NÃO | `String` | Algum documento do cliete, ex: CPF |
+  | document | SIM | `String` | Algum documento do cliete, ex: CPF |
 - **PARÂMETRO 3:** Cripto moeda
 - **PARÂMETRO 4:** Para qual forma de pagamento você quer receber (Converter)
 - **PARÂMETRO 5:** Informações da chave pix
@@ -298,16 +273,11 @@ Resposta:
 
 ```js
 try {
-  return await xgate.withdraw.withdrawExternalWallet(
+  return $xgate->withdrawExternalWallet(
     10,
-    {
-      name: "Nome do cliente",
-      phone: "5511900000000",
-      email: "client@domain.com",
-      document: "00000000000",
-    } ?? "1a0********", // {...} or ID
-    "BEP-20",
-    "USDT",
+    new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
+    MethodBlockchain::BEP20,
+    MethodCryptocurrency::USDT,
     "0xff*****"
   );
 } catch (err) {
@@ -322,7 +292,7 @@ try {
   | name | SIM | `String` | Nome do cliente |
   | phone | NÃO | `String` | Telefone do cliente |
   | email | NÃO | `String` | E-mail do cliente |
-  | document | NÃO | `String` | Algum documento do cliete, ex: CPF |
+  | document | SIM | `String` | Algum documento do cliete, ex: CPF |
 - **PARÂMETRO 3:** Rede blockchain
 - **PARÂMETRO 4:** Cripto moeda
 - **PARÂMETRO 5:** Chave pública da carteira que vai receber a transferência
@@ -347,7 +317,7 @@ Resposta:
 
 ```js
 try {
-  return await xgate.currencies.getCurrenciesDeposit();
+  return $xgate->getCurrenciesDeposit();
 } catch (err) {
   return err;
 }
@@ -376,7 +346,7 @@ Resposta:
 
 ```js
 try {
-  return await xgate.currencies.getCurrenciesWithdraw();
+  return $xgate->getCurrenciesWithdraw();
 } catch (err) {
   return err;
 }
@@ -405,7 +375,7 @@ Resposta:
 
 ```js
 try {
-  return await xgate.cryptocurrencies.getCryptocurrenciesDeposit();
+  return $xgate->getCryptocurrenciesDeposit();
 } catch (err) {
   return err;
 }
@@ -434,7 +404,7 @@ Resposta:
 
 ```js
 try {
-  return await xgate.cryptocurrencies.getCryptocurrenciesWithdraw();
+  return $xgate->getCryptocurrenciesWithdraw();
 } catch (err) {
   return err;
 }
@@ -463,7 +433,7 @@ Resposta:
 
 ```js
 try {
-  return await xgate.cryptocurrencies.getBlockchainDeposit();
+  return $xgate->getBlockchainDeposit();
 } catch (err) {
   return err;
 }
@@ -492,7 +462,7 @@ Resposta:
 
 ```js
 try {
-  return await xgate.cryptocurrencies.getBlockchainWithdraw();
+  return $xgate->getBlockchainWithdraw();
 } catch (err) {
   return err;
 }
@@ -521,10 +491,10 @@ Resposta:
 
 ```js
 try {
-  return await xgate.quotation.getQuotationDepositFiatToCrypto(
+  return $xgate->getQuotationDepositFiatToCrypto(
     10,
-    "PIX",
-    "USDT"
+    MethodCurrency::PIX,
+    MethodCryptocurrency::USDT
   );
 } catch (err) {
   return err;
@@ -556,10 +526,10 @@ Resposta:
 
 ```js
 try {
-  return await xgate.quotation.getQuotationWithdrawCryptoToFiat(
+  return $xgate->getQuotationWithdrawCryptoToFiat(
     10,
-    "USDT"
-    "PIX",
+    MethodCryptocurrency::USDT,
+    MethodCurrency::PIX
   );
 } catch (err) {
   return err;
@@ -591,10 +561,10 @@ Resposta:
 
 ```js
 try {
-  return await xgate.quotation.getQuotationWithdrawExternalWallet(
+  return $xgate->getQuotationWithdrawExternalWallet(
     10,
-    "BET-20",
-    "USDT"
+    MethodBlockchain::BEP20,
+    MethodCryptocurrency::USDT
   );
 } catch (err) {
   return err;
@@ -619,9 +589,12 @@ Resposta:
 
 ```js
 try {
-  return await xgate.customer.customerCreate({
-    name: "Nome do cliente",
-  });
+  return $xgate->customerCreate(
+    new Customer(
+      "Nome do cliente",
+      "00000000000"
+    )
+  );
 } catch (err) {
   return err;
 }
@@ -633,7 +606,7 @@ try {
   | name | SIM | `String` | Nome do cliente |
   | phone | NÃO | `String` | Telefone do cliente |
   | email | NÃO | `String` | E-mail do cliente |
-  | document | NÃO | `String` | Algum documento do cliete, ex: CPF |
+  | document | SIM | `String` | Algum documento do cliete, ex: CPF |
 
 Resposta:
 
@@ -652,9 +625,10 @@ Resposta:
 
 ```js
 try {
-  return await xgate.customer.customerUpdate("********", {
-    name: "Nome do cliente",
-  });
+  return $xgate->customerUpdate(
+    "********",
+    new Customer("Nome do cliente", "00000000000")
+  );
 } catch (err) {
   return err;
 }
@@ -667,7 +641,7 @@ try {
   | name | SIM | `String` | Nome do cliente |
   | phone | NÃO | `String` | Telefone do cliente |
   | email | NÃO | `String` | E-mail do cliente |
-  | document | NÃO | `String` | Algum documento do cliete, ex: CPF |
+  | document | SIM | `String` | Algum documento do cliete, ex: CPF |
 
 Resposta:
 
@@ -686,9 +660,12 @@ Resposta:
 
 ```js
 try {
-  return await xgate.pix.pixKeyCreate(
-    { name: "Nome do cliente" }, // {...} or ID
-    { key: "00000000000", type: "CPF" }
+  return $xgate->pixKeyCreate(
+    new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
+    new PixKeyParam(
+      "00000000000",
+      PixKeyParamType::CPF
+    )
   );
 } catch (err) {
   return err;
@@ -701,7 +678,7 @@ try {
   | name | SIM | `String` | Nome do cliente |
   | phone | NÃO | `String` | Telefone do cliente |
   | email | NÃO | `String` | E-mail do cliente |
-  | document | NÃO | `String` | Algum documento do cliete, ex: CPF |
+  | document | SIM | `String` | Algum documento do cliete, ex: CPF |
 
 - **PARÂMETRO 2:** Informações da chave pix do cliente
   | parâmetro | Obrigatório | Tipo | Descrição
@@ -724,9 +701,9 @@ Resposta:
 
 ```js
 try {
-  return await xgate.pix.pixKeyGetAll({
-    name: "Nome do cliente", // {...} or ID
-  });
+  return $xgate->pixKeyGetAll(
+    new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
+  );
 } catch (err) {
   return err;
 }
@@ -738,7 +715,7 @@ try {
   | name | SIM | `String` | Nome do cliente |
   | phone | NÃO | `String` | Telefone do cliente |
   | email | NÃO | `String` | E-mail do cliente |
-  | document | NÃO | `String` | Algum documento do cliete, ex: CPF |
+  | document | SIM | `String` | Algum documento do cliete, ex: CPF |
 
 Resposta:
 
@@ -758,7 +735,7 @@ Resposta:
 
 ```js
 try {
-  return await xgate.pix.pixKeyDelete("*******", "*******");
+  return $xgate->pixKeyDelete("*******", "*******");
 } catch (err) {
   return err;
 }
@@ -783,7 +760,7 @@ Resposta:
 
 ```js
 try {
-  return await xgate.company.getBalance();
+  return $xgate->getBalance();
 } catch (err) {
   return err;
 }
@@ -816,7 +793,7 @@ Resposta:
 
 ```js
 try {
-  return await xgate.company.getBalance({ currencyId: "********" });
+  return $xgate->getBalance(new CurrencyBalance("********"));
 } catch (err) {
   return err;
 }
@@ -846,7 +823,7 @@ OBSERVAÇÃO: Pode ser o ID tanto da moeda fiduciária de **saque** como a de **
 
 ```js
 try {
-  return await xgate.company.getBalance({ cryptocurrencyId: "********" });
+  return $xgate->getBalance(new CryptoBalance("********"));
 } catch (err) {
   return err;
 }
@@ -877,52 +854,56 @@ OBSERVAÇÃO: Pode ser o ID tanto da cripto moeda de **saque** como a de **depó
 
 ```js
 try {
-  const cryptocurrencies =
-    await xgate.cryptocurrencies.getCryptocurrenciesDeposit();
-  return await xgate.subCompany.createSubCompany({
-    user: {
-      name: "Meu primeiro usuário",
-      email: "email@domain.com",
-      password: "********",
-      phone: {
-        type: "mobile",
-        number: "900000000",
-        areaCode: "11",
-        countryCode: "55",
-      },
-    },
-    deposit: {
-      currencies: {
-        type: "PERCENTAGE",
-        value: 0,
-      },
-      cryptocurrencies: cryptocurrencies.map((item) => ({
-        cryptocurrency: item._id,
-        fee: {
-          type: "PERCENTAGE",
-          value: 5,
-        },
-      })),
-      blockchainNetworks: {
-        type: "PERCENTAGE",
-        value: 0,
-      },
-    },
-    withdraw: {
-      currencies: {
-        type: "PERCENTAGE",
-        value: 1,
-      },
-      cryptocurrencies: {
-        type: "PERCENTAGE",
-        value: 1,
-      },
-      blockchainNetworks: {
-        type: "PERCENTAGE",
-        value: 1,
-      },
-    },
-  });
+  $currencies = $xgate->getCurrenciesDeposit();
+
+  return $xgate->createSubCompany(
+    new SubCompanyCreate(
+      new User(
+        "Meu primeiro usuário",
+        "email@domain.com",
+        "********",
+        new Phone(
+          PhoneType::mobile,
+          "900000000",
+          "11",
+          "55"
+        )
+      ),
+      new SubCompanyOption(
+        array_map(function (currency){
+          return new SubCompanyOptionCurrency(
+            currency,
+            new Fee(
+              FeeType::PERCENTAGE,
+              10
+            )
+          );
+        }),
+        new Fee(
+          FeeType::PERCENTAGE,
+          10
+        ),
+        new Fee(
+          FeeType::PERCENTAGE,
+          10
+        )
+      ),
+      new SubCompanyOption(
+        new Fee(
+          FeeType::PERCENTAGE,
+          10
+        ),
+        new Fee(
+          FeeType::PERCENTAGE,
+          10
+        ),
+        new Fee(
+          FeeType::PERCENTAGE,
+          10
+        )
+      )
+    )
+  );
 } catch (err) {
   return err;
 }
@@ -1019,11 +1000,13 @@ Resposta:
 
 ```js
 try {
-  const xgateSubCompany = new Xgate({
-    email: "email@domain.com",
-    password: "********",
-  });
-  return await xgateSubCompany.subCompany.addFirstIP(
+  $xgateSubCompany = new XGate(
+    new Account(
+      'nameemail@domain.com',
+      '**************'
+    )
+  );
+  return await $xgate->subCompanyAddFirstIP(
     "0000:0000:0000:0000:0000:0000:0000:0000"
   );
 } catch (err) {
@@ -1052,14 +1035,18 @@ Resposta:
 
 ```js
 try {
-  const xgateSubCompany = new Xgate({
-    email: "email@domain.com",
-    password: "********",
-  });
-  return await xgateSubCompany.subCompany.addFirstWebhook({
-    externalWebhookUrl: "https://www.mydomain.com/webhook",
-    name: "Primeiro Webhook Test",
-  });
+  $xgateSubCompany = new XGate(
+    new Account(
+      'nameemail@domain.com',
+      '**************'
+    )
+  );
+  return $xgate->subCompanyAddFirstWebhook(
+    new Webhook(
+      "https://www.mydomain.com/webhook",
+      "Primeiro Webhook Test"
+    )
+  );
 } catch (err) {
   return err;
 }

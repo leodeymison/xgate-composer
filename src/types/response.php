@@ -419,22 +419,29 @@ enum FeeType: string
 
 class Fee
 {
-    public function __construct(
-        public FeeType $type,
-        public float $value
-    ) {}
+    public string $type;
+    public float $value;
+    public function __construct(FeeType $type, float $value) {
+        $this->type = $type->value;
+        $this->value = $value;
+    }
 }
 
+/**
+ * @var SubCompanyOptionCurrency[]|Fee
+ * @var SubCompanyOptionBlockchainNetwork[]|Fee
+ * @var SubCompanyOptionCryptocurrency[]|Fee
+ */
 class SubCompanyOption
 {
-    public SubCompanyOptionCurrency $currencies;
-    public SubCompanyOptionBlockchainNetwork $blockchainNetworks;
-    public SubCompanyOptionCryptocurrency $cryptocurrencies;
+    public array|Fee $currencies;
+    public array|Fee $blockchainNetworks;
+    public array|Fee $cryptocurrencies;
 
     public function __construct(
-        SubCompanyOptionCurrency $currencies,
-        SubCompanyOptionBlockchainNetwork $blockchainNetworks,
-        SubCompanyOptionCryptocurrency $cryptocurrencies,
+        array|Fee $currencies,
+        array|Fee $blockchainNetworks,
+        array|Fee $cryptocurrencies,
     ) {
         $this->currencies = $currencies;
         $this->blockchainNetworks = $blockchainNetworks;
@@ -551,19 +558,19 @@ class Webhook {
 
 class Customer {
     public string $name;
+    public ?string $document;
     public ?string $email;
-    public ?string $password;
     public ?Phone $phone;
 
     public function __construct(
         string $name,
-        string $email,
-        string $password,
-        Phone $phone,
+        ?string $document,
+        ?string $email = null,
+        ?Phone $phone = null,
     ){
         $this->name = $name;
         $this->email = $email;
-        $this->password = $password;
+        $this->document = $document;
         $this->phone = $phone;
     }
 }
@@ -578,14 +585,14 @@ enum PixKeyParamType: string
   }
 class PixKeyParam {
     public string $key;
-    public PixKeyParamType $type;
+    public string $type;
 
     public function __construct(
         string $key,
         PixKeyParamType $type,
     ){
         $this->key = $key;
-        $this->type = $type;
+        $this->type = $type->value;
     }
 }
 
