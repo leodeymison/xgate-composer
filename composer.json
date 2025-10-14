@@ -1,11 +1,16 @@
 {
   "name": "xgate/xgate-integration",
   "description": "Pacote para integração com a API da XGate",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "xgate",
   "license": "MIT",
   "require": {
     "guzzlehttp/guzzle": "^7.9",
     "aws/aws-sdk-php": "^3.352"
+  },
+  "autoload": {
+    "classmap": [
+      "src/"
+    ]
   }
 }
