@@ -5,7 +5,7 @@ use GuzzleHttp\Exception\RequestException;
 
 require_once __DIR__ . '/types/account.php';
 require_once __DIR__ . '/types/token.php';
-require_once __DIR__ . './types/response.php';
+require_once __DIR__ . '/types/response.php';
 require_once __DIR__ . '/modules/Errors.php';
 
 class XGate

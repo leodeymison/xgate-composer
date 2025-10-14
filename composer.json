@@ -9,8 +9,8 @@
     "aws/aws-sdk-php": "^3.352"
   },
   "autoload": {
-    "classmap": [
-      "src/"
-    ]
+    "psr-4": {
+      "XGate\\Integration\\": "src/"
+    }
   }
 }
