@@ -856,7 +856,7 @@ OBSERVAÇÃO: Pode ser o ID tanto da cripto moeda de **saque** como a de **depó
 try {
   $currencies = $xgate->getCurrenciesDeposit();
 
-  return $xgate->createSubCompany(
+  $xgate->createSubCompany(
     new SubCompanyCreate(
       new User(
         "Meu primeiro usuário",
@@ -870,15 +870,15 @@ try {
         )
       ),
       new SubCompanyOption(
-        array_map(function (currency){
-          return new SubCompanyOptionCurrency(
-            currency,
+        [
+          new SubCompanyOptionCurrency(
+            $currencies[0],
             new Fee(
               FeeType::PERCENTAGE,
               10
             )
-          );
-        }),
+          )
+        ],
         new Fee(
           FeeType::PERCENTAGE,
           10

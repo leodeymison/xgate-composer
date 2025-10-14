@@ -271,7 +271,7 @@ class XGate
                 "withdraw",
             ];
             foreach ($typeTransactions as $typeTransaction) {
-                $currencies = $dataParam[$typeTransaction]['currencies'] ?? null;
+                $currencies = $dataParam->{$typeTransaction}->currencies ?? null;
 
                 if (is_array($currencies)) {
                     foreach ($currencies as $coin) {
@@ -315,7 +315,7 @@ class XGate
 
             // CRYPTOCURRENCIES
             foreach ($typeTransactions as $typeTransaction) {
-                $cryptos = $dataParam[$typeTransaction]['cryptocurrencies'] ?? null;
+                $cryptos = $dataParam->{$typeTransaction}->cryptocurrencies ?? null;
 
                 if (is_array($cryptos)) {
                     foreach ($cryptos as $coin) {
@@ -359,7 +359,7 @@ class XGate
 
             // BLOCKCHAIN NETWORKS
             foreach ($typeTransactions as $typeTransaction) {
-                $networks = $dataParam[$typeTransaction]['blockchainNetworks'] ?? null;
+                $networks = $dataParam->{$typeTransaction}->blockchainNetworks ?? null;
 
                 if (is_array($networks)) {
                     foreach ($networks as $coin) {
