@@ -28,9 +28,7 @@ composer require xgate/xgate-integration dev-production
 Crie um instância da classe `Xgate` para ter acesso aos métodos.
 
 ```php
-require 'vendor/autoload.php';
-
-use GuzzleHttp\Client;
+require 'vendor/xgate/xgate-integration/src/index.php';
 
 try {
   $xgate = new XGate(
