@@ -18,7 +18,7 @@ Uma solução moderna para pagamentos e conversões financeiras. Uma plataforma 
 ## Instalação
 
 ```
-npm install xgate
+composer require xgate/xgate-integration dev-production
 ```
 
 ## Manual
