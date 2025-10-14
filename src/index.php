@@ -37,7 +37,7 @@ class XGate
                 $data['token'],
             );
 
-            return $data;
+            return new Login($data['token']);
         } catch (RequestException $e) {
             throw new XGateError($e, "Erro ao acessar conta", 500);
         }
