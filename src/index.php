@@ -496,7 +496,15 @@ class XGate
                 'json' => $customer,
                 'headers' => $this->getHeader(),
             ]);
-            return json_decode($response->getBody(), true);
+
+            $data = json_decode($response->getBody(), true);
+
+            return new CreateCustomer(
+                new CreateCustomerCustomer(
+                    $data["customer"]["_id"]
+                ),
+                $data["message"]
+            );
         } catch (RequestException $e) {
             throw new XGateError($e, "Erro ao criar cliente: ", 500);
         }
@@ -516,7 +524,9 @@ class XGate
                 'json' => $customer,
                 'headers' => $this->getHeader(),
             ]);
-            return json_decode($response->getBody(), true);
+            $data = json_decode($response->getBody(), true);
+
+            return new Message($data["message"]);
         } catch (RequestException $e) {
             throw new XGateError($e, "Erro ao atualizar cliente: ", 500);
         }
@@ -690,7 +700,7 @@ class XGate
 
         if (!$currency) {
             throw new XGateError(
-                new Error(), 
+                null, 
                 sprintf("Moeda %s não habilitada na conta", $methodCurrency->value),
                 400
             );
@@ -714,7 +724,17 @@ class XGate
                 ],
                 'headers' => $this->getHeader(),
             ]);
-            return json_decode($response->getBody(), true);
+            $data = json_decode($response->getBody(), true);
+
+            return new Deposit(
+                new DepositData(
+                    $data["data"]["status"],
+                    $data["data"]["code"],
+                    $data["data"]["id"],
+                    $data["data"]["customerId"],
+                ),
+                $data["message"]
+            );
         } catch (RequestException $e) {
             throw new XGateError($e, "Erro ao solicitar depósito: ", 500);
         }
@@ -739,14 +759,14 @@ class XGate
 
         if (!$currency) {
             throw new XGateError(
-                new Error(), 
+                null, 
                 sprintf("Moeda %s não habilitada na conta", $methodCurrency->value),
                 400
             );
         }
         if (!$crypto) {
             throw new XGateError(
-                new Error(), 
+                null, 
                 sprintf("Cripto moeda %s não habilitada na conta", $methodCryptocurrency->value),
                 400
             );
@@ -771,7 +791,18 @@ class XGate
                 ],
                 'headers' => $this->getHeader(),
             ]);
-            return json_decode($response->getBody(), true);
+            
+            $data = json_decode($response->getBody(), true);
+
+            return new Deposit(
+                new DepositData(
+                    $data["data"]["status"],
+                    $data["data"]["code"],
+                    $data["data"]["id"],
+                    $data["data"]["customerId"],
+                ),
+                $data["message"]
+            );
         } catch (RequestException $e) {
             throw new XGateError($e, "Erro ao solicitar depósito com conversão: ", 500);
         }
@@ -823,7 +854,12 @@ class XGate
         $currency = array_values($currency)[0] ?? null;
 
         if (!$currency) {
-            throw new XGateError(new Error(), sprintf("Moeda %s não habilitada na sua conta", $methodCurrency->value), 400);
+            throw new XGateError(
+                null, 
+                sprintf("Moeda %s não habilitada na sua conta", 
+                $methodCurrency->value
+            ),
+            400);
         }
 
         $customerId = "";
@@ -854,9 +890,16 @@ class XGate
                 ],
                 'headers' => $this->getHeader(),
             ]);
-            return json_decode($response->getBody(), true);
+
+            $data = json_decode($response->getBody(), true);
+
+            return new Withdraw(
+                $data["status"],
+                $data["message"],
+                $data["_id"]
+            );
         } catch (RequestException $e) {
-            throw new XGateError($e, "Erro ao solicitar saque: ", 500);
+            throw new XGateError($e, "Erro ao solicitar saque", 500);
         }
     }
     /**
@@ -880,14 +923,14 @@ class XGate
 
         if (!$currency) {
             throw new XGateError(
-                new Error(), 
+                null, 
                 sprintf("Moeda %s não habilitada na conta", $methodCurrency->value),
                 400
             );
         }
         if (!$crypto) {
             throw new XGateError(
-                new Error(), 
+                null, 
                 sprintf("Cripto moeda %s não habilitada na conta", $methodCryptocurrency->value),
                 400
             );
@@ -923,7 +966,14 @@ class XGate
                 ],
                 'headers' => $this->getHeader(),
             ]);
-            return json_decode($response->getBody(), true);
+
+            $data = json_decode($response->getBody(), true);
+
+            return new Withdraw(
+                $data["status"],
+                $data["message"],
+                $data["_id"]
+            );
         } catch (RequestException $e) {
             throw new XGateError($e, "Erro ao solicitar saque com conversão: ", 500);
         }
@@ -948,11 +998,11 @@ class XGate
         $this->verifyLogged();
 
         $blockchains = $this->getBlockchainWithdraw();
-        $blockchain = array_filter($blockchains, fn($c) => $c->name === $methodBlockchainNetwork->value);
+        $blockchain = array_filter($blockchains, fn($c) => $c["name"] === $methodBlockchainNetwork->value);
 
         if (!count($blockchain, COUNT_RECURSIVE)) {
             throw new XGateError(
-                new Error(), 
+                null, 
                 sprintf("Rede blockchain %s não habilitada na sua conta", 
                 $methodBlockchainNetwork->value
             ), 
@@ -963,27 +1013,19 @@ class XGate
         $blockchain = array_values($blockchain)[0];
 
         // Filtra as criptomoedas dentro da blockchain
-        $cryptocurrencies = array_filter($blockchain->cryptocurrencies, function ($item) use ($methodCryptocurrency) {
-            return $item->cryptocurrency->name === $methodCryptocurrency->value;
+        $cryptocurrencies = array_filter($blockchain["cryptocurrencies"], function ($item) use ($methodCryptocurrency) {
+            return $item["name"] === $methodCryptocurrency->value;
         });
 
         if (!count($cryptocurrencies, COUNT_RECURSIVE)) {
             throw new XGateError(
-                new Error(), 
+                null, 
                 sprintf("Cripto moeda %s não habilitada na conta", $methodCryptocurrency->value),
                 400
             );
         }
 
         $cryptocurrency = array_values($cryptocurrencies)[0];
-
-        if ($cryptocurrency->minWithdraw > $amount) {
-            throw new XGateError(
-                new Error(), 
-                sprintf("Saque mínimo de %s na Rede %s é de %s %s", $methodCryptocurrency->value, $methodBlockchainNetwork->value, $cryptocurrency->minWithdraw, $methodCryptocurrency->value),
-                400
-            );
-        }
 
         $customerId = "";
 
@@ -1000,14 +1042,20 @@ class XGate
                     'amount' => $amount,
                     'customerId' => $customerId,
                     'blockchainNetwork' => $blockchain,
-                    'cryptocurrency' => $cryptocurrency->cryptocurrency,
+                    'cryptocurrency' => $cryptocurrency,
                     'wallet' => $walletKey
                 ],
                 'headers' => $this->getHeader(),
             ]);
-            return json_decode($response->getBody(), true);
+            $data = json_decode($response->getBody(), true);
+
+            return new Withdraw(
+                $data["status"],
+                $data["message"],
+                $data["_id"]
+            );
         } catch (RequestException $e) {
-            throw new XGateError($e, "Erro ao solicitar saque para carteira externa: ", 500);
+            throw new XGateError($e, "Erro ao solicitar saque para carteira externa", 500);
         }
     }
 
@@ -1037,7 +1085,16 @@ class XGate
                 'headers' => $this->getHeader(),
             ]);
 
-            return json_decode($response->getBody(), true);
+            $data = json_decode($response->getBody(), true);
+
+            return new PixKeyCreate(
+                new PixKey(
+                    $data["key"]["key"],
+                    $data["key"]["type"],
+                    $data["key"]["_id"]
+                ),
+                $data["message"]
+            );
         } catch (RequestException $e) {
             throw new XGateError($e, "Erro ao criar chave pix para um cliente", 500);
         }
@@ -1081,13 +1138,13 @@ class XGate
         $this->verifyLogged();
 
         try {
-            $customerId = "";
-
             $response = $this->api->delete("/pix/customer/{$customerId}/key/remove/{$pixKeyId}", [
                 'headers' => $this->getHeader(),
             ]);
 
-            return json_decode($response->getBody(), true);
+            $data = json_decode($response->getBody(), true);
+
+            return new Message($data["message"]);
         } catch (RequestException $e) {
             throw new XGateError($e, "Erro ao deletar chave pix de um cliente", 500);
         }

@@ -558,13 +558,13 @@ class Webhook {
 
 class Customer {
     public string $name;
-    public ?string $document;
+    public string $document;
     public ?string $email;
     public ?Phone $phone;
 
     public function __construct(
         string $name,
-        ?string $document,
+        string $document,
         ?string $email = null,
         ?Phone $phone = null,
     ){
