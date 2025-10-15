@@ -546,7 +546,9 @@ class XGate
                 ],
                 'headers' => $this->getHeader(),
             ]);
-            return json_decode($response->getBody(), true);
+
+            $data = json_decode($response->getBody(), true);
+            return new QuotationCrypto($data["amount"], $data["crypto"]) ;
         } catch (RequestException $e) {
             throw new XGateError($e, "Erro ao obter cotação: ", 500);
         }
@@ -578,14 +580,24 @@ class XGate
         }
 
         try {
-            $response = $this->api->post(sprintf("/withdraw/conversion/%s/%s", mb_strtolower($currency[0]->name), mb_strtolower($currency[0]->type)), [
-                'json' => [
-                    'amount' => $amount,
-                    'cryptocurrency' => $cryptocurrency[0],
-                ],
-                'headers' => $this->getHeader(),
-            ]);
-            return json_decode($response->getBody(), true);
+            $response = $this->api->post(
+                sprintf(
+                    "/withdraw/conversion/%s/%s", 
+                    mb_strtolower($currency["name"]), 
+                    mb_strtolower($currency["type"])
+                ),
+                [
+                    'json' => [
+                        'amount' => $amount,
+                        'cryptocurrency' => $cryptocurrency,
+                    ],
+                    'headers' => $this->getHeader(),
+                ]
+            );
+
+            $data = json_decode($response->getBody(), true);
+
+            return new QuotationFiat($data["amount"], $data["currency"]);
         } catch (RequestException $e) {
             throw new XGateError($e, "Erro ao buscar redes blockchainscde de depósito disponíveis para depósito na sua conta", 500);
         }
@@ -602,34 +614,47 @@ class XGate
         $this->verifyLogged();
 
         $blockchains = $this->getBlockchainWithdraw();
-        $blockchain = array_filter($blockchains, fn($c) => $c['type'] === $methodBlockchain->value);
+        $blockchain = array_filter($blockchains, fn($c) => $c["name"] === $methodBlockchain->value);
         $blockchain = array_values($blockchain)[0] ?? null;
 
         if (!$blockchain) {
             throw new XGateError(new Error(), sprintf("Rede Blockchain %s não está habilitada na sua conta", $methodBlockchain->value), 400);
         }
 
-        $cryptocurrency = array_filter($blockchain[0]->cryptocurrencies, fn($c) => $c->cryptocurrency['name'] === $methodCryptocurrency->value);
+        if (empty($blockchain["cryptocurrencies"]) || !is_array($blockchain["cryptocurrencies"])) {
+            throw new XGateError(new Error(), sprintf(
+                "Rede Blockchain %s não possui nenhuma moeda disponível no momento",
+                $methodBlockchain->value
+            ), 400);
+        }
+
+        $cryptocurrency = array_filter($blockchain["cryptocurrencies"], fn($c) => $c["name"] === $methodCryptocurrency->value);
         $cryptocurrency = array_values($cryptocurrency)[0] ?? null;
 
         if (!$cryptocurrency) {
-            throw new XGateError(new Error(), sprintf("Crypto moeda %s não está habilitada na sua conta", $methodCryptocurrency->value), 400);
-        }
-
-        if (!$cryptocurrency[0]->minWithdraw > $amount) {
-            throw new XGateError(new Error(), sprintf("Saque mínimo de %s na Rede %s é de %s %s", $methodCryptocurrency->value, $methodBlockchain->value, $cryptocurrency[0]->minWithdraw, $methodCryptocurrency->value), 400);
+            throw new XGateError(
+                new Error(), 
+                sprintf(
+                    "Crypto moeda %s não está habilitada na sua conta", 
+                    $methodCryptocurrency->value
+                ), 
+                400
+            );
         }
 
         try {
             $response = $this->api->post(sprintf("/withdraw/transaction/crypto/amount"), [
                 'json' => [
                     'amount' => $amount,
-                    'cryptocurrency' => $cryptocurrency[0]->cryptocurrency,
-                    'blockchainNetwork' => $blockchain[0],
+                    'cryptocurrency' => $cryptocurrency,
+                    'blockchainNetwork' => $blockchain,
                 ],
                 'headers' => $this->getHeader(),
             ]);
-            return json_decode($response->getBody(), true);
+
+            $data = json_decode($response->getBody(), true);
+            
+            return new QuotationAmount($data["amount"]);
         } catch (RequestException $e) {
             throw new XGateError($e, "Erro ao buscar redes blockchains de depósito disponíveis para depósito na sua conta", 500);
         }
