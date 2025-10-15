@@ -1,21 +1,23 @@
 <?php
 
-class XGateError extends Error
+class XGateError extends Exception
 {
     public int $status;
-    public object $originalError;
+    public ?object $originalError;
 
     public string $name;
 
-    public function __construct(object $error, string $messageDefault, int $defaultStatus)
+    public function __construct(?object $error, string $messageDefault, int $defaultStatus)
     {
         // Tenta pegar a mensagem do erro aninhado
         $message = $messageDefault;
 
-        $messageExternal = json_decode($error->getResponse()->getBody()->getContents())->message;
+        if($error){
+            $messageExternal = json_decode($error->getResponse()->getBody()->getContents())->message;
 
-        if($messageExternal){
-            $message = $messageExternal;
+            if($messageExternal){
+                $message = $messageExternal;
+            }
         }
 
         // Chama o construtor pai com a mensagem encontrada
@@ -27,12 +29,16 @@ class XGateError extends Error
         // Define o status, se existir no erro, senão usa o padrão
         $this->status = $defaultStatus;
 
-        $statusExternal = $error->getResponse()->getStatusCode();
-        if ($statusExternal) {
-            $this->status = $statusExternal;
-        }
+        $this->originalError = null;
 
-        // Armazena o erro original
-        $this->originalError = $error;
+        if($error){
+            $statusExternal = $error->getResponse()->getStatusCode();
+            if ($statusExternal) {
+                $this->status = $statusExternal;
+            }
+
+             // Armazena o erro original
+            $this->originalError = $error;
+        }
     }
 }

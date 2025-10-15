@@ -193,7 +193,7 @@ class XGate
                 if (property_exists($filter, "currencyId")) {
                     $deposits = $this->getCurrenciesDeposit();
                     $depositsFilter = array_filter($deposits, function ($item) use ($filter) {
-                        return $item->_id === $filter->currencyId;
+                        return $item["_id"] === $filter->currencyId;
                     });
 
                     if (!empty($depositsFilter)) {
@@ -203,16 +203,22 @@ class XGate
                     } else {
                         $withdraw = $this->getCurrenciesWithdraw();
                         $withdrawFilter = array_filter($withdraw, function ($item) use ($filter) {
-                            return $item->_id === $filter->currencyId;
+                            return $item["_id"] === $filter->currencyId;
                         });
-                        $body = [
-                            "currency" => array_values($withdrawFilter)[0]
-                        ];
+                        if (!empty($withdrawFilter)) {
+                            $body = ["currency" => array_values($withdrawFilter)[0]];
+                        } else {
+                            throw new XGateError(
+                                null,
+                                sprintf("Moeda com ID %s não encontrada entre depósitos ou saques.", $filter->currencyId),
+                                404
+                            );
+                        }
                     }
                 } else {
                     $deposits = $this->getCryptocurrenciesDeposit();
                     $depositsFilter = array_filter($deposits, function ($item) use ($filter) {
-                        return $item->_id === $filter->cryptocurrencyId;
+                        return $item["_id"] === $filter->cryptocurrencyId;
                     });
 
                     if (!empty($depositsFilter)) {
@@ -222,11 +228,17 @@ class XGate
                     } else {
                         $withdraw = $this->getCryptocurrenciesWithdraw();
                         $withdrawFilter = array_filter($withdraw, function ($item) use ($filter) {
-                            return $item->_id === $filter->cryptocurrencyId;
+                            return $item["_id"] === $filter->cryptocurrencyId;
                         });
-                        $body = [
-                            "cryptocurrency" => array_values($withdrawFilter)[0]
-                        ];
+                        if (!empty($withdrawFilter)) {
+                            $body = ["cryptocurrency" => array_values($withdrawFilter)[0]];
+                        } else {
+                            throw new XGateError(
+                                null,
+                                sprintf("Cripto moeda com ID %s não encontrada entre depósitos ou saques.", $filter->cryptocurrencyId),
+                                404
+                            );
+                        }
                     }
                 }
             }
@@ -532,10 +544,10 @@ class XGate
         $crypto = array_values($crypto)[0] ?? null;
         
         if (!$crypto) {
-            throw new XGateError(new Error(), sprintf("Crypto moeda %s não está habilitada na sua conta", $crypto), 400);
+            throw new XGateError(null , sprintf("Crypto moeda %s não está habilitada na sua conta", $crypto), 400);
         }
         if (!$currency) {
-            throw new XGateError(new Error(), sprintf("Moeda %s não está habilitada na sua conta", $currency), 400);
+            throw new XGateError(null , sprintf("Moeda %s não está habilitada na sua conta", $currency), 400);
         }
 
         try {
@@ -573,10 +585,10 @@ class XGate
         $cryptocurrency = array_values($cryptocurrency)[0] ?? null;
 
         if (!$cryptocurrency) {
-            throw new XGateError(new Error(), sprintf("Crypto moeda %s não está habilitada na sua conta", $cryptocurrency), 400);
+            throw new XGateError(null, sprintf("Crypto moeda %s não está habilitada na sua conta", $cryptocurrency), 400);
         }
         if (!$currency) {
-            throw new XGateError(new Error(), sprintf("Moeda %s não está habilitada na sua conta", $methodCurrency->value), 400);
+            throw new XGateError(null, sprintf("Moeda %s não está habilitada na sua conta", $methodCurrency->value), 400);
         }
 
         try {
@@ -618,11 +630,11 @@ class XGate
         $blockchain = array_values($blockchain)[0] ?? null;
 
         if (!$blockchain) {
-            throw new XGateError(new Error(), sprintf("Rede Blockchain %s não está habilitada na sua conta", $methodBlockchain->value), 400);
+            throw new XGateError(null, sprintf("Rede Blockchain %s não está habilitada na sua conta", $methodBlockchain->value), 400);
         }
 
         if (empty($blockchain["cryptocurrencies"]) || !is_array($blockchain["cryptocurrencies"])) {
-            throw new XGateError(new Error(), sprintf(
+            throw new XGateError(null, sprintf(
                 "Rede Blockchain %s não possui nenhuma moeda disponível no momento",
                 $methodBlockchain->value
             ), 400);
@@ -633,7 +645,7 @@ class XGate
 
         if (!$cryptocurrency) {
             throw new XGateError(
-                new Error(), 
+                null, 
                 sprintf(
                     "Crypto moeda %s não está habilitada na sua conta", 
                     $methodCryptocurrency->value
