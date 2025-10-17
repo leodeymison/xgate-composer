@@ -1,7 +1,7 @@
 {
   "name": "xgate/xgate-integration",
   "description": "Pacote para integração com a API da XGate",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": "xgate",
   "license": "MIT",
   "require": {
