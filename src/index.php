@@ -89,7 +89,24 @@ class XGate
             $response = $this->api->get('/deposit/company/currencies', [
                 'headers' => $this->getHeader(),
             ]);
-            return json_decode($response->getBody(), true);
+            
+            $data = json_decode($response->getBody(), true);
+
+            // Converte cada item em um objeto Currency
+            $currencies = [];
+            foreach ($data as $item) {
+                $currencies[] = new Currency(
+                    $item['_id'],
+                    $item['name'],
+                    $item['type'],
+                    $item['createdDate'],
+                    $item['updatedDate'],
+                    $item['__v'],
+                    $item['symbol']
+                );
+            }
+
+            return $currencies;
         } catch (RequestException $e) {
             throw new XGateError($e, "Erro ao buscar moedas de depósito disponíveis na sua conta", 500);
         }
@@ -105,7 +122,23 @@ class XGate
             $response = $this->api->get('/withdraw/company/currencies', [
                 'headers' => $this->getHeader(),
             ]);
-            return json_decode($response->getBody(), true);
+            $data = json_decode($response->getBody(), true);
+
+            // Converte cada item em um objeto Currency
+            $currencies = [];
+            foreach ($data as $item) {
+                $currencies[] = new Currency(
+                    $item['_id'],
+                    $item['name'],
+                    $item['type'],
+                    $item['createdDate'],
+                    $item['updatedDate'],
+                    $item['__v'],
+                    $item['symbol']
+                );
+            }
+
+            return $currencies;
         } catch (RequestException $e) {
             throw new XGateError($e, "Erro ao buscar moedas de saque disponíveis na sua conta", 500);
         }
@@ -123,7 +156,23 @@ class XGate
             $response = $this->api->get('/deposit/company/cryptocurrencies', [
                 'headers' => $this->getHeader(),
             ]);
-            return json_decode($response->getBody(), true);
+            $data = json_decode($response->getBody(), true);
+
+            // Converte cada item em um objeto Currency
+            $cryptocurrencies = [];
+            foreach ($data as $item) {
+                $cryptocurrencies[] = new Cryptocurrency(
+                    $item['_id'],
+                    $item['name'],
+                    $item['symbol'],
+                    $item['coinGecko'],
+                    $item['createdDate'],
+                    $item['updatedDate'],
+                    $item['__v'],
+                );
+            }
+
+            return $cryptocurrencies;
         } catch (RequestException $e) {
             throw new XGateError($e, "Erro ao buscar cripto moedas de depósito disponíveis na sua conta", 500);
         }
@@ -139,7 +188,23 @@ class XGate
             $response = $this->api->get('/withdraw/company/cryptocurrencies', [
                 'headers' => $this->getHeader(),
             ]);
-            return json_decode($response->getBody(), true);
+            $data = json_decode($response->getBody(), true);
+
+            // Converte cada item em um objeto Currency
+            $cryptocurrencies = [];
+            foreach ($data as $item) {
+                $cryptocurrencies[] = new Cryptocurrency(
+                    $item['_id'],
+                    $item['name'],
+                    $item['symbol'],
+                    $item['coinGecko'],
+                    $item['createdDate'],
+                    $item['updatedDate'],
+                    $item['__v'],
+                );
+            }
+
+            return $cryptocurrencies;
         } catch (RequestException $e) {
             throw new XGateError($e, "Erro ao buscar cripto moedas de saque disponíveis na sua conta", 500);
         }
@@ -156,7 +221,37 @@ class XGate
             $response = $this->api->get('/deposit/company/blockchain-networks', [
                 'headers' => $this->getHeader(),
             ]);
-            return json_decode($response->getBody(), true);
+            $data = json_decode($response->getBody(), true);
+
+            $blockchains = [];
+
+            foreach ($data as $item) {
+                $cryptocurrencies = [];
+
+                foreach ($item['cryptocurrencies'] as $crypto) {
+                    $cryptocurrencies[] = new Cryptocurrency(
+                        $crypto["_id"],
+                        $crypto["name"],
+                        $crypto["symbol"],
+                        $crypto["coinGecko"],
+                        $crypto["createdDate"],
+                        $crypto["updatedDate"],
+                        $crypto["__v"],
+                    );
+                };
+
+                $blockchains[] = new BlockchainDeposit(
+                    $item['_id'],
+                    $item['name'],
+                    $item['chainId'],
+                    $cryptocurrencies,
+                    $item['createdDate'],
+                    $item['updatedDate'],
+                    $item['__v'],
+                );
+            }
+
+            return $blockchains;
         } catch (RequestException $e) {
             throw new XGateError($e, "Erro ao buscar redes blockchainscde de depósito disponíveis para depósito na sua conta", 500);
         }
@@ -171,7 +266,41 @@ class XGate
             $response = $this->api->get('/deposit/company/blockchain-networks', [
                 'headers' => $this->getHeader(),
             ]);
-            return json_decode($response->getBody(), true);
+            $data = json_decode($response->getBody(), true);
+
+            $blockchains = [];
+
+            foreach ($data as $item) {
+                $cryptocurrencies = [];
+
+                foreach ($item['cryptocurrencies'] as $crypto) {
+                    $cryptocurrencies[] = new BlockchainWithdrawCryptocurrency(
+                        $crypto["_id"],
+                        new Cryptocurrency(
+                            $crypto["_id"],
+                            $crypto["name"],
+                            $crypto["symbol"],
+                            $crypto["coinGecko"],
+                            $crypto["createdDate"],
+                            $crypto["updatedDate"],
+                            $crypto["__v"],
+                        ),
+                        $crypto["minWithdraw"] ?? null,
+                    );
+                };
+
+                $blockchains[] = new BlockchainWithdraw(
+                    $item['_id'],
+                    $item['name'],
+                    $item['chainId'],
+                    $cryptocurrencies,
+                    $item['createdDate'],
+                    $item['updatedDate'],
+                    $item['__v'],
+                );
+            }
+
+            return $blockchains;
         } catch (RequestException $e) {
             throw new XGateError($e, "Erro ao buscar redes blockchainscde de saque disponíveis para depósito na sua conta", 500);
         }
@@ -193,7 +322,7 @@ class XGate
                 if (property_exists($filter, "currencyId")) {
                     $deposits = $this->getCurrenciesDeposit();
                     $depositsFilter = array_filter($deposits, function ($item) use ($filter) {
-                        return $item["_id"] === $filter->currencyId;
+                        return $item->_id === $filter->currencyId;
                     });
 
                     if (!empty($depositsFilter)) {
@@ -203,7 +332,7 @@ class XGate
                     } else {
                         $withdraw = $this->getCurrenciesWithdraw();
                         $withdrawFilter = array_filter($withdraw, function ($item) use ($filter) {
-                            return $item["_id"] === $filter->currencyId;
+                            return $item->_id === $filter->currencyId;
                         });
                         if (!empty($withdrawFilter)) {
                             $body = ["currency" => array_values($withdrawFilter)[0]];
@@ -218,7 +347,7 @@ class XGate
                 } else {
                     $deposits = $this->getCryptocurrenciesDeposit();
                     $depositsFilter = array_filter($deposits, function ($item) use ($filter) {
-                        return $item["_id"] === $filter->cryptocurrencyId;
+                        return $item->_id === $filter->cryptocurrencyId;
                     });
 
                     if (!empty($depositsFilter)) {
@@ -228,7 +357,7 @@ class XGate
                     } else {
                         $withdraw = $this->getCryptocurrenciesWithdraw();
                         $withdrawFilter = array_filter($withdraw, function ($item) use ($filter) {
-                            return $item["_id"] === $filter->cryptocurrencyId;
+                            return $item->_id === $filter->cryptocurrencyId;
                         });
                         if (!empty($withdrawFilter)) {
                             $body = ["cryptocurrency" => array_values($withdrawFilter)[0]];
@@ -259,16 +388,13 @@ class XGate
      * @param SubCompanyCreate $dataParam - Object com as informações da sub conta. { user: {...}, deposit: {...}, withdraw: {...} }
      * @return SubCompanyCreate
      */
-    public function createSubCompany(SubCompanyCreate $dataParam): SubCompanyCreate {
+    public function createSubCompany(SubCompanyCreate $dataParam): Message
+    {
         $this->verifyLogged();
-        $keys = [
-            "currencies",
-            "cryptocurrencies",
-            "blockchainNetworks",
-        ];
+
         try {
             $body = [
-                'user' => $dataParam->user, // equivalente ao dataParam.user
+                'user' => $dataParam->user,
                 'deposit' => [
                     'blockchainNetworks' => [],
                     'cryptocurrencies' => [],
@@ -280,54 +406,93 @@ class XGate
                     'currencies' => [],
                 ],
             ];
-            $typeTransactions = [
-                "deposit",
-                "withdraw",
-            ];
+
+            $typeTransactions = ['deposit', 'withdraw'];
+
+            // 🪙 CURRENCIES
             foreach ($typeTransactions as $typeTransaction) {
                 $currencies = $dataParam->{$typeTransaction}->currencies ?? null;
 
                 if (is_array($currencies)) {
+                    // É ARRAY
                     foreach ($currencies as $coin) {
                         if (is_string($coin['currency'] ?? null)) {
                             $func = $typeTransaction === 'deposit'
                                 ? $this->getCurrenciesDeposit()
                                 : $this->getCurrenciesWithdraw();
 
-                            $getCoin = array_filter($func, function ($item) use ($coin) {
-                                return $item['_id'] === $coin['currency'];
-                            });
+                            $getCoin = array_filter($func, fn($item) => $item['_id'] === $coin['currency']);
+                            $currencyArray = array_values($getCoin)[0] ?? null;
 
-                            if (empty($getCoin)) {
+                            if (!$currencyArray) {
                                 throw new Exception("Moeda {$coin['currency']} não disponível para a sua conta");
                             }
 
-                            $body[$typeTransaction]['currencies'][] = [
-                                'currency' => array_values($getCoin)[0],
-                                'fee' => $coin['fee'] ?? null
-                            ];
+                            $currency = new Currency(
+                                $currencyArray['_id'],
+                                $currencyArray['name'],
+                                $currencyArray['type'],
+                                $currencyArray['createdDate'],
+                                $currencyArray['updatedDate'],
+                                $currencyArray['__v'],
+                                $currencyArray['symbol']
+                            );
+
+                            $fee = is_array($coin['fee'])
+                                ? new Fee(FeeType::from($coin['fee']['type']), $coin['fee']['value'])
+                                : $coin['fee'];
+
+                            $body[$typeTransaction]['currencies'][] = new SubCompanyOptionCurrency($currency, $fee);
                         } else {
-                            $body[$typeTransaction]['currencies'][] = [
-                                'currency' => $coin['currency'],
-                                'fee' => $coin['fee'] ?? null
-                            ];
+                            $currencyData = $coin['currency'];
+                            if (is_array($currencyData)) {
+                                $currency = new Currency(
+                                    $currencyData['_id'],
+                                    $currencyData['name'],
+                                    $currencyData['type'],
+                                    $currencyData['createdDate'],
+                                    $currencyData['updatedDate'],
+                                    $currencyData['__v'],
+                                    $currencyData['symbol']
+                                );
+                            } else {
+                                $currency = $currencyData;
+                            }
+
+                            $fee = is_array($coin['fee'])
+                                ? new Fee(FeeType::from($coin['fee']['type']), $coin['fee']['value'])
+                                : $coin['fee'];
+
+                            $body[$typeTransaction]['currencies'][] = new SubCompanyOptionCurrency($currency, $fee);
                         }
                     }
                 } else {
+                    // É OBJECT (Fee único)
                     $getCoin = $typeTransaction === 'deposit'
                         ? $this->getCurrenciesDeposit()
                         : $this->getCurrenciesWithdraw();
 
                     foreach ($getCoin as $coin) {
-                        $body[$typeTransaction]['currencies'][] = [
-                            'currency' => $coin,
-                            'fee' => $currencies ?? null
-                        ];
+                        $currency = new Currency(
+                            $coin['_id'],
+                            $coin['name'],
+                            $coin['type'],
+                            $coin['createdDate'],
+                            $coin['updatedDate'],
+                            $coin['__v'],
+                            $coin['symbol']
+                        );
+
+                        $fee = is_array($currencies)
+                            ? new Fee(FeeType::from($currencies['type']), $currencies['value'])
+                            : $currencies;
+
+                        $body[$typeTransaction]['currencies'][] = new SubCompanyOptionCurrency($currency, $fee);
                     }
                 }
             }
 
-            // CRYPTOCURRENCIES
+            // 💰 CRYPTOCURRENCIES
             foreach ($typeTransactions as $typeTransaction) {
                 $cryptos = $dataParam->{$typeTransaction}->cryptocurrencies ?? null;
 
@@ -338,40 +503,78 @@ class XGate
                                 ? $this->getCryptocurrenciesDeposit()
                                 : $this->getCryptocurrenciesWithdraw();
 
-                            $getCoin = array_filter($func, function ($item) use ($coin) {
-                                return $item['_id'] === $coin['cryptocurrency'];
-                            });
+                            $getCoin = array_filter($func, fn($item) => $item['_id'] === $coin['cryptocurrency']);
+                            $cryptoArray = array_values($getCoin)[0] ?? null;
 
-                            if (empty($getCoin)) {
+                            if (!$cryptoArray) {
                                 throw new Exception("Cripto moeda {$coin['cryptocurrency']} não disponível para a sua conta");
                             }
 
-                            $body[$typeTransaction]['cryptocurrencies'][] = [
-                                'cryptocurrency' => array_values($getCoin)[0],
-                                'fee' => $coin['fee'] ?? null
-                            ];
+                            $cryptocurrency = new Cryptocurrency(
+                                $cryptoArray['_id'],
+                                $cryptoArray['name'],
+                                $cryptoArray['symbol'],
+                                $cryptoArray['coinGecko'],
+                                $cryptoArray['createdDate'],
+                                $cryptoArray['updatedDate'],
+                                $cryptoArray['__v']
+                            );
+
+                            $fee = is_array($coin['fee'])
+                                ? new Fee(FeeType::from($coin['fee']['type']), $coin['fee']['value'])
+                                : $coin['fee'];
+
+                            $body[$typeTransaction]['cryptocurrencies'][] = new SubCompanyOptionCryptocurrency($cryptocurrency, $fee);
                         } else {
-                            $body[$typeTransaction]['cryptocurrencies'][] = [
-                                'cryptocurrency' => $coin['cryptocurrency'],
-                                'fee' => $coin['fee'] ?? null
-                            ];
+                            $cryptoData = $coin['cryptocurrency'];
+                            if (is_array($cryptoData)) {
+                                $cryptocurrency = new Cryptocurrency(
+                                    $cryptoData['_id'],
+                                    $cryptoData['name'],
+                                    $cryptoData['symbol'],
+                                    $cryptoData['coinGecko'],
+                                    $cryptoData['createdDate'],
+                                    $cryptoData['updatedDate'],
+                                    $cryptoData['__v']
+                                );
+                            } else {
+                                $cryptocurrency = $cryptoData;
+                            }
+
+                            $fee = is_array($coin['fee'])
+                                ? new Fee(FeeType::from($coin['fee']['type']), $coin['fee']['value'])
+                                : $coin['fee'];
+
+                            $body[$typeTransaction]['cryptocurrencies'][] = new SubCompanyOptionCryptocurrency($cryptocurrency, $fee);
                         }
                     }
                 } else {
+                    // É Fee único
                     $getCoin = $typeTransaction === 'deposit'
                         ? $this->getCryptocurrenciesDeposit()
                         : $this->getCryptocurrenciesWithdraw();
 
                     foreach ($getCoin as $coin) {
-                        $body[$typeTransaction]['cryptocurrencies'][] = [
-                            'cryptocurrency' => $coin,
-                            'fee' => $cryptos ?? null
-                        ];
+                        $cryptocurrency = new Cryptocurrency(
+                            $coin['_id'],
+                            $coin['name'],
+                            $coin['symbol'],
+                            $coin['coinGecko'],
+                            $coin['createdDate'],
+                            $coin['updatedDate'],
+                            $coin['__v']
+                        );
+
+                        $fee = is_array($cryptos)
+                            ? new Fee(FeeType::from($cryptos['type']), $cryptos['value'])
+                            : $cryptos;
+
+                        $body[$typeTransaction]['cryptocurrencies'][] = new SubCompanyOptionCryptocurrency($cryptocurrency, $fee);
                     }
                 }
             }
 
-            // BLOCKCHAIN NETWORKS
+            // 🔗 BLOCKCHAIN NETWORKS
             foreach ($typeTransactions as $typeTransaction) {
                 $networks = $dataParam->{$typeTransaction}->blockchainNetworks ?? null;
 
@@ -387,28 +590,53 @@ class XGate
                                     '_id' => $item['_id'],
                                     'name' => $item['name'],
                                     'chainId' => $item['chainId'],
-                                    'updatedDate' => $item['updatedDate'],
                                     'createdDate' => $item['createdDate'],
+                                    'updatedDate' => $item['updatedDate'],
+                                    '__v' => $item['__v'] ?? 0,
                                 ];
                             }, $func);
 
-                            $getCoin = array_filter($funcWithoutCrypto, function ($item) use ($coin) {
-                                return $item['_id'] === $coin['blockchainNetwork'];
-                            });
+                            $getCoin = array_filter($funcWithoutCrypto, fn($item) => $item['_id'] === $coin['blockchainNetwork']);
+                            $blockchainArray = array_values($getCoin)[0] ?? null;
 
-                            if (empty($getCoin)) {
+                            if (!$blockchainArray) {
                                 throw new Exception("Blockchain {$coin['blockchainNetwork']} não disponível para a sua conta");
                             }
 
-                            $body[$typeTransaction]['blockchainNetworks'][] = [
-                                'blockchainNetwork' => array_values($getCoin)[0],
-                                'fee' => $coin['fee'] ?? null
-                            ];
+                            $blockchain = new BlockchainDepositWithoutCryptocurrencies(
+                                $blockchainArray['_id'],
+                                $blockchainArray['name'],
+                                $blockchainArray['chainId'],
+                                $blockchainArray['createdDate'],
+                                $blockchainArray['updatedDate'],
+                                $blockchainArray['__v']
+                            );
+
+                            $fee = is_array($coin['fee'])
+                                ? new Fee(FeeType::from($coin['fee']['type']), $coin['fee']['value'])
+                                : $coin['fee'];
+
+                            $body[$typeTransaction]['blockchainNetworks'][] = new SubCompanyOptionBlockchainNetwork($blockchain, $fee);
                         } else {
-                            $body[$typeTransaction]['blockchainNetworks'][] = [
-                                'blockchainNetwork' => $coin['blockchainNetwork'],
-                                'fee' => $coin['fee'] ?? null
-                            ];
+                            $blockchainData = $coin['blockchainNetwork'];
+                            if (is_array($blockchainData)) {
+                                $blockchain = new BlockchainDepositWithoutCryptocurrencies(
+                                    $blockchainData['_id'],
+                                    $blockchainData['name'],
+                                    $blockchainData['chainId'],
+                                    $blockchainData['createdDate'],
+                                    $blockchainData['updatedDate'],
+                                    $blockchainData['__v']
+                                );
+                            } else {
+                                $blockchain = $blockchainData;
+                            }
+
+                            $fee = is_array($coin['fee'])
+                                ? new Fee(FeeType::from($coin['fee']['type']), $coin['fee']['value'])
+                                : $coin['fee'];
+
+                            $body[$typeTransaction]['blockchainNetworks'][] = new SubCompanyOptionBlockchainNetwork($blockchain, $fee);
                         }
                     }
                 } else {
@@ -416,34 +644,57 @@ class XGate
                         ? $this->getBlockchainDeposit()
                         : $this->getBlockchainWithdraw();
 
-                    $funcWithoutCrypto = array_map(function ($item) {
-                        return [
-                            '_id' => $item['_id'],
-                            'name' => $item['name'],
-                            'chainId' => $item['chainId'],
-                            'updatedDate' => $item['updatedDate'],
-                            'createdDate' => $item['createdDate'],
-                        ];
-                    }, $getCoin);
+                    foreach ($getCoin as $coin) {
+                        $blockchain = new BlockchainDepositWithoutCryptocurrencies(
+                            $coin['_id'],
+                            $coin['name'],
+                            $coin['chainId'],
+                            $coin['createdDate'],
+                            $coin['updatedDate'],
+                            $coin['__v'] ?? 0
+                        );
 
-                    foreach ($funcWithoutCrypto as $coin) {
-                        $body[$typeTransaction]['blockchainNetworks'][] = [
-                            'blockchainNetwork' => $coin,
-                            'fee' => $networks ?? null
-                        ];
+                        $fee = is_array($networks)
+                            ? new Fee(FeeType::from($networks['type']), $networks['value'])
+                            : $networks;
+
+                        $body[$typeTransaction]['blockchainNetworks'][] = new SubCompanyOptionBlockchainNetwork($blockchain, $fee);
                     }
                 }
             }
 
+            // 🔥 Requisição final
             $response = $this->api->post('/company/subaccount', [
-                'json' => $body,
+                'json' => [
+                    'user' => [
+                        'name' => $dataParam->user->name,
+                        'email' => $dataParam->user->email,
+                        'password' => $dataParam->user->password,
+                        'phone' => [
+                            'type' => $dataParam->user->phone->type->value,
+                            'number' => $dataParam->user->phone->number,
+                            'areaCode' => $dataParam->user->phone->areaCode,
+                            'countryCode' => $dataParam->user->phone->countryCode,
+                        ],
+                    ],
+                    'deposit' => $body['deposit'],
+                    'withdraw' => $body['withdraw'],
+                ],
                 'headers' => $this->getHeader(),
             ]);
-            return json_decode($response->getBody(), true);
+
+            $data = json_decode($response->getBody(), true);
+
+            print_r($data);
+
+            return new Message($data['message']);
         } catch (RequestException $e) {
             throw new XGateError($e, "Erro ao criar sub conta", 500);
+        } catch (Exception $e) {
+            throw new XGateError($e, "Erro ao montar dados da sub conta", 500);
         }
     }
+
     /**
      * Adiciona o primeiro IP de uma sub conta
      * @param string $ip - Endereço IPV4 ou IPV6
@@ -546,11 +797,11 @@ class XGate
         $this->verifyLogged();
 
         $currencies = $this->getCurrenciesDeposit();
-        $currency = array_filter($currencies, fn($c) => $c['type'] === $currencyType->value);
+        $currency = array_filter($currencies, fn($c) => $c->type === $currencyType->value);
         $currency = array_values($currency)[0] ?? null;
 
         $cryptos = $this->getCryptocurrenciesDeposit();
-        $crypto = array_filter($cryptos, fn($c) => $c['name'] === $cryptoName->value);
+        $crypto = array_filter($cryptos, fn($c) => $c->name === $cryptoName->value);
         $crypto = array_values($crypto)[0] ?? null;
         
         if (!$crypto) {
@@ -561,7 +812,7 @@ class XGate
         }
 
         try {
-            $response = $this->api->post("/deposit/conversion/{$crypto['coinGecko']}", [
+            $response = $this->api->post("/deposit/conversion/{$crypto->coinGecko}", [
                 'json' => [
                     'amount' => $amount,
                     'currency' => $currency
@@ -587,11 +838,11 @@ class XGate
         $this->verifyLogged();
 
         $currencies = $this->getCurrenciesWithdraw();
-        $currency = array_filter($currencies, fn($c) => $c['type'] === $methodCurrency->value);
+        $currency = array_filter($currencies, fn($c) => $c->type === $methodCurrency->value);
         $currency = array_values($currency)[0] ?? null;
 
         $cryptocurrencies = $this->getCryptocurrenciesWithdraw();
-        $cryptocurrency = array_filter($cryptocurrencies, fn($c) => $c['name'] === $methodCryptocurrency->value);
+        $cryptocurrency = array_filter($cryptocurrencies, fn($c) => $c->name === $methodCryptocurrency->value);
         $cryptocurrency = array_values($cryptocurrency)[0] ?? null;
 
         if (!$cryptocurrency) {
@@ -605,8 +856,8 @@ class XGate
             $response = $this->api->post(
                 sprintf(
                     "/withdraw/conversion/%s/%s", 
-                    mb_strtolower($currency["name"]), 
-                    mb_strtolower($currency["type"])
+                    mb_strtolower($currency->name), 
+                    mb_strtolower($currency->type)
                 ),
                 [
                     'json' => [
@@ -636,21 +887,21 @@ class XGate
         $this->verifyLogged();
 
         $blockchains = $this->getBlockchainWithdraw();
-        $blockchain = array_filter($blockchains, fn($c) => $c["name"] === $methodBlockchain->value);
+        $blockchain = array_filter($blockchains, fn($c) => $c->name === $methodBlockchain->value);
         $blockchain = array_values($blockchain)[0] ?? null;
 
         if (!$blockchain) {
             throw new XGateError(null, sprintf("Rede Blockchain %s não está habilitada na sua conta", $methodBlockchain->value), 400);
         }
 
-        if (empty($blockchain["cryptocurrencies"]) || !is_array($blockchain["cryptocurrencies"])) {
+        if (empty($blockchain->cryptocurrencies) || !is_array($blockchain->cryptocurrencies)) {
             throw new XGateError(null, sprintf(
                 "Rede Blockchain %s não possui nenhuma moeda disponível no momento",
                 $methodBlockchain->value
             ), 400);
         }
 
-        $cryptocurrency = array_filter($blockchain["cryptocurrencies"], fn($c) => $c["name"] === $methodCryptocurrency->value);
+        $cryptocurrency = array_filter($blockchain->cryptocurrencies, fn($c) => $c->cryptocurrency->name === $methodCryptocurrency->value);
         $cryptocurrency = array_values($cryptocurrency)[0] ?? null;
 
         if (!$cryptocurrency) {
@@ -668,7 +919,7 @@ class XGate
             $response = $this->api->post(sprintf("/withdraw/transaction/crypto/amount"), [
                 'json' => [
                     'amount' => $amount,
-                    'cryptocurrency' => $cryptocurrency,
+                    'cryptocurrency' => $cryptocurrency->cryptocurrency,
                     'blockchainNetwork' => $blockchain,
                 ],
                 'headers' => $this->getHeader(),
@@ -695,7 +946,7 @@ class XGate
         $this->verifyLogged();
 
         $currencies = $this->getCurrenciesDeposit();
-        $currency = array_filter($currencies, fn($c) => $c['type'] === $methodCurrency->value);
+        $currency = array_filter($currencies, fn($c) => $c->type === $methodCurrency->value);
         $currency = array_values($currency)[0] ?? null;
 
         if (!$currency) {
@@ -752,10 +1003,10 @@ class XGate
         $this->verifyLogged();
 
         $currencies = $this->getCurrenciesDeposit();
-        $currency = array_values(array_filter($currencies, fn($c) => $c['type'] === $methodCurrency->value))[0] ?? null;
+        $currency = array_values(array_filter($currencies, fn($c) => $c->type === $methodCurrency->value))[0] ?? null;
 
         $cryptos = $this->getCryptocurrenciesDeposit();
-        $crypto = array_values(array_filter($cryptos, fn($c) => $c['name'] === $methodCryptocurrency->value))[0] ?? null;
+        $crypto = array_values(array_filter($cryptos, fn($c) => $c->name === $methodCryptocurrency->value))[0] ?? null;
 
         if (!$currency) {
             throw new XGateError(
@@ -850,7 +1101,7 @@ class XGate
         $this->verifyLogged();
 
         $currencies = $this->getCurrenciesWithdraw();
-        $currency = array_filter($currencies, fn($c) => $c['type'] === $methodCurrency->value);
+        $currency = array_filter($currencies, fn($c) => $c->type === $methodCurrency->value);
         $currency = array_values($currency)[0] ?? null;
 
         if (!$currency) {
@@ -916,10 +1167,10 @@ class XGate
         $this->verifyLogged();
 
         $currencies = $this->getCurrenciesWithdraw();
-        $currency = array_values(array_filter($currencies, fn($c) => $c['type'] === $methodCurrency->value))[0] ?? null;
+        $currency = array_values(array_filter($currencies, fn($c) => $c->type === $methodCurrency->value))[0] ?? null;
 
         $cryptos = $this->getCryptocurrenciesDeposit();
-        $crypto = array_values(array_filter($cryptos, fn($c) => $c['name'] === $methodCryptocurrency->value))[0] ?? null;
+        $crypto = array_values(array_filter($cryptos, fn($c) => $c->name === $methodCryptocurrency->value))[0] ?? null;
 
         if (!$currency) {
             throw new XGateError(
@@ -998,7 +1249,7 @@ class XGate
         $this->verifyLogged();
 
         $blockchains = $this->getBlockchainWithdraw();
-        $blockchain = array_filter($blockchains, fn($c) => $c["name"] === $methodBlockchainNetwork->value);
+        $blockchain = array_filter($blockchains, fn($c) => $c->name === $methodBlockchainNetwork->value);
 
         if (!count($blockchain, COUNT_RECURSIVE)) {
             throw new XGateError(
@@ -1013,8 +1264,8 @@ class XGate
         $blockchain = array_values($blockchain)[0];
 
         // Filtra as criptomoedas dentro da blockchain
-        $cryptocurrencies = array_filter($blockchain["cryptocurrencies"], function ($item) use ($methodCryptocurrency) {
-            return $item["name"] === $methodCryptocurrency->value;
+        $cryptocurrencies = array_filter($blockchain->cryptocurrencies, function ($item) use ($methodCryptocurrency) {
+            return $item->cryptocurrency->name === $methodCryptocurrency->value;
         });
 
         if (!count($cryptocurrencies, COUNT_RECURSIVE)) {

@@ -117,7 +117,8 @@ class BlockchainDeposit {
     public string $_id;
     public string $name;
     public string $chainId;
-    public string $cryptocurrencies;
+    /** @var Cryptocurrency[] */
+    public array $cryptocurrencies;
     public string $createdDate;
     public string $updatedDate;
     public int $__v;
@@ -126,7 +127,8 @@ class BlockchainDeposit {
         string $_id,
         string $name,
         string $chainId,
-        string $cryptocurrencies,
+        /** @var Cryptocurrency[] */
+        array $cryptocurrencies,
         string $createdDate,
         string $updatedDate,
         int $__v,
@@ -176,32 +178,17 @@ class BlockchainWithdraw
 class BlockchainWithdrawCryptocurrency
 {
     public string $_id;
-    public BlockchainWithdrawCryptocurrencySub $cryptocurrency;
-    public float $minWithdraw;
+    public Cryptocurrency $cryptocurrency;
+    public ?float $minWithdraw;
 
     public function __construct(
         string $_id,
-        BlockchainWithdrawCryptocurrencySub $cryptocurrency,
-        float $minWithdraw
+        Cryptocurrency $cryptocurrency,
+        ?float $minWithdraw = null
     ) {
         $this->_id = $_id;
         $this->cryptocurrency = $cryptocurrency;
         $this->minWithdraw = $minWithdraw;
-    }
-}
-
-// Apenas como placeholder, já que você usou "Cryptocurrency" no TS
-class BlockchainWithdrawCryptocurrencySub
-{
-    public string $_id;
-    public string $symbol;
-    public string $name;
-
-    public function __construct(string $_id, string $symbol, string $name)
-    {
-        $this->_id = $_id;
-        $this->symbol = $symbol;
-        $this->name = $name;
     }
 }
 
@@ -427,15 +414,13 @@ class Fee
     }
 }
 
-/**
- * @var SubCompanyOptionCurrency[]|Fee
- * @var SubCompanyOptionBlockchainNetwork[]|Fee
- * @var SubCompanyOptionCryptocurrency[]|Fee
- */
 class SubCompanyOption
 {
+    /** @var SubCompanyOptionCurrency[]|Fee */
     public array|Fee $currencies;
+    /** @var SubCompanyOptionBlockchainNetwork[]|Fee */
     public array|Fee $blockchainNetworks;
+    /** @var SubCompanyOptionCryptocurrency[]|Fee */
     public array|Fee $cryptocurrencies;
 
     public function __construct(
