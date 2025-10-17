@@ -63,7 +63,7 @@ try {
   return $xgate->depositFiat(
     10,
     new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
-    "PIX"
+    MethodCurrency::PIX
   );
 } catch (err) {
   return err;
