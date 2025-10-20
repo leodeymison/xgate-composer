@@ -39,8 +39,8 @@ try {
   );
 
   ...
-} catch (err) {
-  return err;
+} catch (Exception $e) {
+  echo "\nErro: " . $e->getMessage() . "\n";
 }
 ```
 
@@ -59,15 +59,11 @@ try {
 ### 👉 DEPÓSITO usando moeda fiduciária:
 
 ```js
-try {
-  return $xgate->depositFiat(
-    10,
-    new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
-    MethodCurrency::PIX
-  );
-} catch (err) {
-  return err;
-}
+$xgate->depositFiat(
+  10,
+  new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
+  MethodCurrency::PIX
+);
 ```
 
 - **PARÂMETRO 1:** Valor de depósito
@@ -100,16 +96,12 @@ Resposta:
 ### 👉 DEPÓSITO convertendo moeda fiduciária para cripto moeda:
 
 ```js
-try {
-  return $xgate->depositConversionFiatToCrypto(
-    10,
-    new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
-    MethodCurrency::PIX,
-    MethodCryptocurrency::USDT
-  );
-} catch (err) {
-  return err;
-}
+$xgate->depositConversionFiatToCrypto(
+  10,
+  new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
+  MethodCurrency::PIX,
+  MethodCryptocurrency::USDT
+);
 ```
 
 - **PARÂMETRO 1:** Valor de depósito
@@ -143,13 +135,9 @@ Resposta:
 ### 👉 DEPÓSITO de cripto moeda (Gerar uma carteira)
 
 ```js
-try {
-  return $xgate->depositGenerateCryptoWallet(
-    new Customer("Nome do cliente", "00000000000") ?? "1a0********" // {...} or ID
-  );
-} catch (err) {
-  return err;
-}
+$xgate->depositGenerateCryptoWallet(
+  new Customer("Nome do cliente", "00000000000") ?? "1a0********" // {...} or ID
+);
 ```
 
 - **PARÂMETRO 1:** Informações do cliente ou ID do cliente que já existe
@@ -183,16 +171,12 @@ Resposta:
 ### 👉 SAQUE usando moeda fiduciária:
 
 ```js
-try {
-  return $xgate->withdrawFiat(
-    10,
-    new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
-    MethodCurrency::PIX,
-    new PixKeyParam("00000000000", PixKeyParamType::CPF)
-  );
-} catch (err) {
-  return err;
-}
+$xgate->withdrawFiat(
+  10,
+  new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
+  MethodCurrency::PIX,
+  new PixKeyParam("00000000000", PixKeyParamType::CPF)
+);
 ```
 
 - **PARÂMETRO 1:** Valor de saque
@@ -226,17 +210,13 @@ Resposta:
 ### 👉 SAQUE convertendo cripto moeda para moeda fiduciária:
 
 ```js
-try {
-  return $xgate->withdrawConversionCryptoToFiat(
-    10,
-    new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
-    MethodCryptocurrency::USDT,
-    MethodCurrency::PIX,
-    new PixKeyParam("00000000000", PixKeyParamType::CPF)
-  );
-} catch (err) {
-  return err;
-}
+$xgate->withdrawConversionCryptoToFiat(
+  10,
+  new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
+  MethodCryptocurrency::USDT,
+  MethodCurrency::PIX,
+  new PixKeyParam("00000000000", PixKeyParamType::CPF)
+);
 ```
 
 - **PARÂMETRO 1:** Valor de saque
@@ -270,17 +250,13 @@ Resposta:
 ### 👉 SAQUE para carteira externa:
 
 ```js
-try {
-  return $xgate->withdrawExternalWallet(
-    10,
-    new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
-    MethodBlockchain::BEP20,
-    MethodCryptocurrency::USDT,
-    "0xff*****"
-  );
-} catch (err) {
-  return err;
-}
+$xgate->withdrawExternalWallet(
+  10,
+  new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
+  MethodBlockchain::BEP20,
+  MethodCryptocurrency::USDT,
+  "0xff*****"
+);
 ```
 
 - **PARÂMETRO 1:** Valor de saque
@@ -314,11 +290,8 @@ Resposta:
 ### 👉 BUSCAR lista de moedas fiduciária disponíveis para depósito
 
 ```js
-try {
-  return $xgate->getCurrenciesDeposit();
-} catch (err) {
-  return err;
-}
+$xgate->getCurrenciesDeposit();
+
 ```
 
 Resposta:
@@ -343,11 +316,8 @@ Resposta:
 ### 👉 BUSCAR lista de moedas fiduciária disponíveis para saques
 
 ```js
-try {
-  return $xgate->getCurrenciesWithdraw();
-} catch (err) {
-  return err;
-}
+$xgate->getCurrenciesWithdraw();
+
 ```
 
 Resposta:
@@ -372,11 +342,8 @@ Resposta:
 ### 👉 BUSCAR lista de cripto moedas disponíveis para depósito
 
 ```js
-try {
-  return $xgate->getCryptocurrenciesDeposit();
-} catch (err) {
-  return err;
-}
+$xgate->getCryptocurrenciesDeposit();
+
 ```
 
 Resposta:
@@ -401,11 +368,8 @@ Resposta:
 ### 👉 BUSCAR lista de cripto moedas disponíveis para saque
 
 ```js
-try {
-  return $xgate->getCryptocurrenciesWithdraw();
-} catch (err) {
-  return err;
-}
+$xgate->getCryptocurrenciesWithdraw();
+
 ```
 
 Resposta:
@@ -430,11 +394,8 @@ Resposta:
 ### 👉 BUSCAR redes blockchain disponíveis para depósito e suas cripto moedas suportadas
 
 ```js
-try {
-  return $xgate->getBlockchainDeposit();
-} catch (err) {
-  return err;
-}
+$xgate->getBlockchainDeposit();
+
 ```
 
 Resposta:
@@ -459,11 +420,7 @@ Resposta:
 ### 👉 BUSCAR redes blockchain disponíveis para saque e suas cripto moedas suportadas
 
 ```js
-try {
-  return $xgate->getBlockchainWithdraw();
-} catch (err) {
-  return err;
-}
+$xgate->getBlockchainWithdraw();
 ```
 
 Resposta:
@@ -488,15 +445,11 @@ Resposta:
 ### 👉 COTAÇÃO de depósito convertendo moeda fiduciária para cripto moeda
 
 ```js
-try {
-  return $xgate->getQuotationDepositFiatToCrypto(
-    10,
-    MethodCurrency::PIX,
-    MethodCryptocurrency::USDT
-  );
-} catch (err) {
-  return err;
-}
+$xgate->getQuotationDepositFiatToCrypto(
+  10,
+  MethodCurrency::PIX,
+  MethodCryptocurrency::USDT
+);
 ```
 
 - **PARÂMETRO 1:** Valor de depósito
@@ -523,15 +476,12 @@ Resposta:
 ### 👉 COTAÇÃO de saque convertendo cripto moeda para moeda fiduciária
 
 ```js
-try {
-  return $xgate->getQuotationWithdrawCryptoToFiat(
-    10,
-    MethodCryptocurrency::USDT,
-    MethodCurrency::PIX
-  );
-} catch (err) {
-  return err;
-}
+$xgate->getQuotationWithdrawCryptoToFiat(
+  10,
+  MethodCryptocurrency::USDT,
+  MethodCurrency::PIX
+);
+
 ```
 
 - **PARÂMETRO 1:** Valor de saque
@@ -558,15 +508,11 @@ Resposta:
 ### 👉 COTAÇÃO de saque para um carteira de cripto moeda externa
 
 ```js
-try {
-  return $xgate->getQuotationWithdrawExternalWallet(
-    10,
-    MethodBlockchain::BEP20,
-    MethodCryptocurrency::USDT
-  );
-} catch (err) {
-  return err;
-}
+$xgate->getQuotationWithdrawExternalWallet(
+  10,
+  MethodBlockchain::BEP20,
+  MethodCryptocurrency::USDT
+);
 ```
 
 - **PARÂMETRO 1:** Valor de saque
@@ -586,16 +532,12 @@ Resposta:
 ### 👉 CLIENTE: Criar um cliente
 
 ```js
-try {
-  return $xgate->customerCreate(
-    new Customer(
-      "Nome do cliente",
-      "00000000000"
-    )
-  );
-} catch (err) {
-  return err;
-}
+$xgate->customerCreate(
+  new Customer(
+    "Nome do cliente",
+    "00000000000"
+  )
+);
 ```
 
 - **PARÂMETRO 1:** Informações do cliente
@@ -622,14 +564,10 @@ Resposta:
 ### 👉 CLIENTE: Atualizar informações do cliente
 
 ```js
-try {
-  return $xgate->customerUpdate(
-    "********",
-    new Customer("Nome do cliente", "00000000000")
-  );
-} catch (err) {
-  return err;
-}
+$xgate->customerUpdate(
+  "********",
+  new Customer("Nome do cliente", "00000000000")
+);
 ```
 
 - **PARÂMETRO 1:** ID do cliente existente
@@ -657,17 +595,13 @@ Resposta:
 ### 👉 PIX: Criar uma chave pix para um clientes
 
 ```js
-try {
-  return $xgate->pixKeyCreate(
-    new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
-    new PixKeyParam(
-      "00000000000",
-      PixKeyParamType::CPF
-    )
-  );
-} catch (err) {
-  return err;
-}
+$xgate->pixKeyCreate(
+  new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
+  new PixKeyParam(
+    "00000000000",
+    PixKeyParamType::CPF
+  )
+);
 ```
 
 - **PARÂMETRO 1:** Informações do cliente ou ID do cliente existente
@@ -698,13 +632,9 @@ Resposta:
 ### 👉 PIX: Buscar todas as chaves pix de um cliente
 
 ```js
-try {
-  return $xgate->pixKeyGetAll(
-    new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
-  );
-} catch (err) {
-  return err;
-}
+$xgate->pixKeyGetAll(
+  new Customer("Nome do cliente", "00000000000") ?? "1a0********", // {...} or ID
+);
 ```
 
 - **PARÂMETRO 1:** Informações do cliente ou ID do cliente existente
@@ -732,11 +662,7 @@ Resposta:
 ### 👉 PIX: Deletar uma chave pix do cliente
 
 ```js
-try {
-  return $xgate->pixKeyDelete("*******", "*******");
-} catch (err) {
-  return err;
-}
+$xgate->pixKeyDelete("*******", "*******");
 ```
 
 - **PARÂMETRO 1:** ID do cliente
@@ -757,11 +683,8 @@ Resposta:
 #### # Busca todas as moedas fiduciárias e cripto moedas
 
 ```js
-try {
-  return $xgate->getBalance();
-} catch (err) {
-  return err;
-}
+$xgate->getBalance();
+
 ```
 
 Resposta:
@@ -790,11 +713,8 @@ Resposta:
 #### # Busca uma moeda fiduciária específica
 
 ```js
-try {
-  return $xgate->getBalance(new CurrencyBalance("********"));
-} catch (err) {
-  return err;
-}
+$xgate->getBalance(new CurrencyBalance("********"));
+
 ```
 
 - **PARÂMETRO 1:** ID da moeda fiduciária
@@ -820,11 +740,8 @@ OBSERVAÇÃO: Pode ser o ID tanto da moeda fiduciária de **saque** como a de **
 #### # Busca uma cripto moeda específica
 
 ```js
-try {
-  return $xgate->getBalance(new CryptoBalance("********"));
-} catch (err) {
-  return err;
-}
+$xgate->getBalance(new CryptoBalance("********"));
+
 ```
 
 - **PARÂMETRO 1:** ID da cripto moeda
@@ -851,60 +768,56 @@ OBSERVAÇÃO: Pode ser o ID tanto da cripto moeda de **saque** como a de **depó
 ### 👉 SUB EMPRESA: Criar sub empresa
 
 ```js
-try {
-  $currencies = $xgate->getCurrenciesDeposit();
+$currencies = $xgate->getCurrenciesDeposit();
 
-  $xgate->createSubCompany(
-    new SubCompanyCreate(
-      new User(
-        "Meu primeiro usuário",
-        "email@domain.com",
-        "********",
-        new Phone(
-          PhoneType::mobile,
-          "900000000",
-          "11",
-          "55"
-        )
-      ),
-      new SubCompanyOption(
-        [
-          new SubCompanyOptionCurrency(
-            $currencies[0],
-            new Fee(
-              FeeType::PERCENTAGE,
-              10
-            )
+$xgate->createSubCompany(
+  new SubCompanyCreate(
+    new User(
+      "Meu primeiro usuário",
+      "email@domain.com",
+      "********",
+      new Phone(
+        PhoneType::mobile,
+        "900000000",
+        "11",
+        "55"
+      )
+    ),
+    new SubCompanyOption(
+      [
+        new SubCompanyOptionCurrency(
+          $currencies[0],
+          new Fee(
+            FeeType::PERCENTAGE,
+            10
           )
-        ],
-        new Fee(
-          FeeType::PERCENTAGE,
-          10
-        ),
-        new Fee(
-          FeeType::PERCENTAGE,
-          10
         )
+      ],
+      new Fee(
+        FeeType::PERCENTAGE,
+        10
       ),
-      new SubCompanyOption(
-        new Fee(
-          FeeType::PERCENTAGE,
-          10
-        ),
-        new Fee(
-          FeeType::PERCENTAGE,
-          10
-        ),
-        new Fee(
-          FeeType::PERCENTAGE,
-          10
-        )
+      new Fee(
+        FeeType::PERCENTAGE,
+        10
+      )
+    ),
+    new SubCompanyOption(
+      new Fee(
+        FeeType::PERCENTAGE,
+        10
+      ),
+      new Fee(
+        FeeType::PERCENTAGE,
+        10
+      ),
+      new Fee(
+        FeeType::PERCENTAGE,
+        10
       )
     )
-  );
-} catch (err) {
-  return err;
-}
+  )
+);
 ```
 
 **OBSERVAÇÃO:** Um objecto único com os seguites parâmetros:
@@ -997,19 +910,15 @@ Resposta:
 ⚠️ _Essa rota adiciona o primeiro IP da sub empresa, caso tente adicionar um segundo IP, retornará um error._
 
 ```js
-try {
-  $xgateSubCompany = new XGate(
-    new Account(
-      'nameemail@domain.com',
-      '**************'
-    )
-  );
-  return await $xgate->subCompanyAddFirstIP(
-    "0000:0000:0000:0000:0000:0000:0000:0000"
-  );
-} catch (err) {
-  return err;
-}
+$xgateSubCompany = new XGate(
+  new Account(
+    'nameemail@domain.com',
+    '**************'
+  )
+);
+return await $xgate->subCompanyAddFirstIP(
+  "0000:0000:0000:0000:0000:0000:0000:0000"
+);
 ```
 
 Primeiro é criado um nova instância da classe `Xgate` e é passada as informações de acesso da sub conta.
@@ -1032,22 +941,18 @@ Resposta:
 ⚠️ _Essa rota adiciona a primeira rota de Webhook da sub empresa, caso tente adicionar um segundo Webhook, retornará um error._
 
 ```js
-try {
-  $xgateSubCompany = new XGate(
-    new Account(
-      'nameemail@domain.com',
-      '**************'
-    )
-  );
-  return $xgate->subCompanyAddFirstWebhook(
-    new Webhook(
-      "https://www.mydomain.com/webhook",
-      "Primeiro Webhook Test"
-    )
-  );
-} catch (err) {
-  return err;
-}
+$xgateSubCompany = new XGate(
+  new Account(
+    'nameemail@domain.com',
+    '**************'
+  )
+);
+$xgate->subCompanyAddFirstWebhook(
+  new Webhook(
+    "https://www.mydomain.com/webhook",
+    "Primeiro Webhook Test"
+  )
+);
 ```
 
 Primeiro é criado um nova instância da classe `Xgate` e é passada as informações de acesso da sub conta.
